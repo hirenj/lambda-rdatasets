@@ -19,6 +19,7 @@ const s3 = new AWS.S3();
 const RData = require('node-rdata');
 const JSONStream = require('JSONStream');
 const fs = require('fs');
+const ConvertJSON = require('./js/transform').ConvertJSON;
 
 const extract_changed_keys = function(event) {
   if ( ! event.Records ) {
@@ -56,15 +57,15 @@ const retrieve_file = function retrieve_file(filekey,md5_result,byte_offset) {
 };
 
 const read_data_stream = function(path) {
-  let input_stream = retrieve_file(path);
+  let input_stream = retrieve_file_local(path);
   let entry_data = input_stream.pipe(JSONStream.parse(['data', {'emitKey': true}]));
   return entry_data;
 };
 
 const write_frame_stream = function(json_stream) {
   let typeinfo =  {   'type': 'dataframe',
-            'keys' : ['x','y','z'],
-            'types' : ['int','string','logical']
+            'keys' : ['uniprot','peptide_start','sequence'],
+            'types' : ['string','int','string']
           };
 
   let output = require('fs').createWriteStream('output.Rdata');
@@ -75,8 +76,15 @@ const write_frame_stream = function(json_stream) {
   writer.writeHeader();
 
   // We need to write out the data frame into an environment
-  writer.environment( {'data' : json_stream },{'data' : typeinfo })
+  return writer.environment( {'data' : json_stream },{'data' : typeinfo })
       .then( () => writer.finish() );
+};
+
+
+const do_transform = function(filename) {
+  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON())).then( () => {
+    console.log("All done");
+  });
 };
 
 const serialiseDataset = function(event,context) {
@@ -92,3 +100,4 @@ const serialiseDataset = function(event,context) {
 };
 
 exports.serialiseDataset = serialiseDataset;
+exports.do_transform = do_transform;
