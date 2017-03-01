@@ -22,7 +22,8 @@
     "precommit-hook": "^3.0.0"
   },
   "dependencies": {
-    "lambda-helpers": "hirenj/lambda-helpers"
+    "lambda-helpers": "hirenj/lambda-helpers",
+    "node-rdata" : "hirenj/node-rdata"
   },
   "pre-commit": [
     "lint"
