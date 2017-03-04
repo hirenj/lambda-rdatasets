@@ -20,6 +20,7 @@ const RData = require('node-rdata');
 const JSONStream = require('JSONStream');
 const fs = require('fs');
 const ConvertJSON = require('./js/transform').ConvertJSON;
+const msdata = require('./js/msdata');
 
 const extract_changed_keys = function(event) {
   if ( ! event.Records ) {
@@ -64,8 +65,8 @@ const read_data_stream = function(path) {
 
 const write_frame_stream = function(json_stream) {
   let typeinfo =  {   'type': 'dataframe',
-            'keys' : ['uniprot','peptide_start','sequence'],
-            'types' : ['string','int','string'],
+            'keys' : msdata.keys,
+            'types' : msdata.types,
             'attributes' : { values: { 'foo' : ['bar'] },
                              names: ['foo'],
                              types: ['string']
@@ -86,7 +87,7 @@ const write_frame_stream = function(json_stream) {
 
 
 const do_transform = function(filename) {
-  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON())).then( () => {
+  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON(msdata))).then( () => {
     console.log("All done");
   });
 };
