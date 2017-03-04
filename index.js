@@ -65,7 +65,11 @@ const read_data_stream = function(path) {
 const write_frame_stream = function(json_stream) {
   let typeinfo =  {   'type': 'dataframe',
             'keys' : ['uniprot','peptide_start','sequence'],
-            'types' : ['string','int','string']
+            'types' : ['string','int','string'],
+            'attributes' : { values: { 'foo' : ['bar'] },
+                             names: ['foo'],
+                             types: ['string']
+                            }
           };
 
   let output = require('fs').createWriteStream('output.Rdata');
