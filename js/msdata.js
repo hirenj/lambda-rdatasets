@@ -16,24 +16,53 @@ const transformer = function(chunk) {
     result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
     result['composition'] = (val.composition || [])[0] || null;
     result['activation'] = (val.activation || []).join(',');
-    result['site'] = null;
-    result['site.composition'] = null;
-    result['site.ambiguous.start'] = null;
-    result['site.ambiguous.end'] = null;
 
     val.sites.forEach( (site) => {
       let site_result = Object.assign({},result);
+      site_result.site = site[0];
+      site_result['site.composition'] = site[1];
+      this.push(site_result);
     });
     val.sites_ambiguous.forEach( (site) => {
       let site_result = Object.assign({},result);
+      site_result['site.ambiguous.start'] = site[0][0];
+      site_result['site.ambiguous.end'] = site[0][1];
+      site_result['site.composition'] = site[1];
+      this.push(site_result);
     });
-
-    // Loop over sites..
-    this.push(result);
   });
 };
 
-transformer.types = ['string','string','int','int','string','real','string'];
-transformer.keys = ['uniprot','peptide','peptide.start','peptide.end','site_ambiguity','quantification','quant_confidence'];
+transformer.types = [ 'string',
+                      'string',
+                      'int',
+                      'int',
+                      'int',
+                      'int',
+                      'int',
+                      'string',
+                      'string',
+                      'real',
+                      'string',
+                      'string',
+                      'string',
+                      'string',
+                      'string'
+                    ];
+transformer.keys = [  'uniprot',
+                      'peptide',
+                      'peptide.start',
+                      'peptide.end',
+                      'site',
+                      'site.ambiguous.start',
+                      'site.ambiguous.end'
+                      'site.composition',
+                      'source',
+                      'quantification',
+                      'quantification.channels',
+                      'site.ambiguity',
+                      'quantification.confidence',
+                      'composition',
+                      'activation'];
 
 module.exports = transformer;
