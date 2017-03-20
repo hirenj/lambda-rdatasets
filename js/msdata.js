@@ -14,9 +14,20 @@ const transformer = function(chunk) {
     result['quantification.channels'] = (val.quant || {}).channels || null;
     result['site.ambiguity'] = val.made_ambiguous || null;
     result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
+    result['composition'] = (val.composition || [])[0] || null;
+    result['activation'] = (val.activation || []).join(',');
+    result['site'] = null;
+    result['site.composition'] = null;
+    result['site.ambiguous.start'] = null;
+    result['site.ambiguous.end'] = null;
+
     val.sites.forEach( (site) => {
       let site_result = Object.assign({},result);
     });
+    val.sites_ambiguous.forEach( (site) => {
+      let site_result = Object.assign({},result);
+    });
+
     // Loop over sites..
     this.push(result);
   });
