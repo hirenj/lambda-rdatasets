@@ -14,8 +14,8 @@ try {
 if (config.region) {
   require('lambda-helpers').AWS.setRegion(config.region);
 }
-const AWS = require('lambda-helpers').AWS;
-const s3 = new AWS.S3();
+// const AWS = require('lambda-helpers').AWS;
+// const s3 = new AWS.S3();
 const RData = require('node-rdata');
 const JSONStream = require('JSONStream');
 const fs = require('fs');
@@ -30,32 +30,33 @@ const extract_changed_keys = function(event) {
   .filter( rec => rec.Sns )
   .map( rec => {
     let sns_message = JSON.parse(rec.Sns.Message);
-    throw new Error("Need to parse message format");
+    console.log(sns_message);
+    throw new Error('Need to parse message format');
   });
   results = [].concat.apply([],results);
   return results.filter( obj => obj.bucket == bucket_name ).map( obj => obj.key );
 };
 
-const retrieve_file_s3 = function retrieve_file_s3(filekey,byte_offset) {
-  let params = {
-    'Key' : filekey,
-    'Bucket' : bucket_name
-  };
-  if (byte_offset) {
-    params.Range = 'bytes='+byte_offset+'-';
-  }
-  let request = s3.getObject(params);
-  let stream = request.createReadStream();
-  return stream;
-};
+// const retrieve_file_s3 = function retrieve_file_s3(filekey,byte_offset) {
+//   let params = {
+//     'Key' : filekey,
+//     'Bucket' : bucket_name
+//   };
+//   if (byte_offset) {
+//     params.Range = 'bytes='+byte_offset+'-';
+//   }
+//   let request = s3.getObject(params);
+//   let stream = request.createReadStream();
+//   return stream;
+// };
 
 const retrieve_file_local = function retrieve_file_local(filekey) {
   return fs.createReadStream(filekey);
 };
 
-const retrieve_file = function retrieve_file(filekey,md5_result,byte_offset) {
-  return retrieve_file_s3(filekey,md5_result,byte_offset);
-};
+// const retrieve_file = function retrieve_file(filekey,md5_result,byte_offset) {
+//   return retrieve_file_s3(filekey,md5_result,byte_offset);
+// };
 
 const read_data_stream = function(path) {
   let input_stream = retrieve_file_local(path);
@@ -88,13 +89,13 @@ const write_frame_stream = function(json_stream) {
 
 const do_transform = function(filename) {
   write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON(msdata))).then( () => {
-    console.log("All done");
+    console.log('All done');
   });
 };
 
 const serialiseDataset = function(event,context) {
   let changed_keys = extract_changed_keys(event);
-
+  console.log(changed_keys);
   Promise.resolve().then( () => {
     context.succeed('OK');
   }).catch( err => {

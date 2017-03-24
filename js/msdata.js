@@ -55,7 +55,7 @@ transformer.keys = [  'uniprot',
                       'peptide.end',
                       'site',
                       'site.ambiguous.start',
-                      'site.ambiguous.end'
+                      'site.ambiguous.end',
                       'site.composition',
                       'source',
                       'quantification',
