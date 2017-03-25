@@ -7,7 +7,11 @@ const util = require('util');
 const ConvertJSON = function(func) {
   this.transformer = func;
   this.annotations = {};
-  this.annotations['spectra'] = true;
+  Object.keys(func.annotations || {}).forEach( attr => {
+    this.annotations[attr] = func.annotations[attr];
+  });
+  this.types = func.types;
+  this.keys = func.keys;
   Transform.call(this, {objectMode: true});
 };
 

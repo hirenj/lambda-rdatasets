@@ -1,5 +1,5 @@
 'use strict';
 
 let runner = require('.');
-
-runner.do_transform('test_input.json');
+console.log(process.argv[2]);
+runner.do_transform(process.argv[2]);

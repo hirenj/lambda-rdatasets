@@ -40,6 +40,12 @@ const transformer = function(chunk) {
     (val.spectra || []).forEach( spec => {
       this.annotations['spectra'].push(Object.assign({ 'peptide.id' : peptide_uuid }, spec ));
     });
+    if (val.annotations && val.annotations['hexnac_calls']) {
+      this.annotations['hexnac_type'].push({ 'peptide.id' : peptide_uuid ,
+                                             'hexnac.call' : val.annotations['hexnac_calls'][0],
+                                             'hexnac.ratio' : +val.annotations['hexnac_ratios']
+                                           });
+    }
   });
 };
 
@@ -79,7 +85,14 @@ transformer.keys = [  'uniprot',
 
 transformer.annotations = {
   'spectra' : {
-    'type' : 'data.frame'
+    'type' : 'dataframe',
+    'keys' : ['peptide.id','score','rt','scan','ppm','mass','charge'],
+    'types' : ['string','real','real','string','real','real','int']
+  },
+  'hexnac_type' : {
+    'type' : 'dataframe',
+    'keys' : ['peptide.id','hexnac.call','hexnac.ratio'],
+    'types' : ['string','string','real']
   }
 };
 

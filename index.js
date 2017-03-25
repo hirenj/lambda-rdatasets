@@ -68,20 +68,20 @@ const read_data_stream = function(path) {
 
 const write_frame_stream = function(json_stream) {
   let typeinfo =  {   'type': 'dataframe',
-            'keys' : msdata.keys,
-            'types' : msdata.types,
-            'attributes' : { values: { 'foo' : ['bar'] },
-                             names: ['foo'],
-                             types: ['string']
-                            }
+            'keys' : json_stream.keys,
+            'types' : json_stream.types
           };
 
   Object.keys(json_stream.annotations).forEach( attribute => {
     let outstream = new PassThrough();
     let instream = new PassThrough({objectMode: true});
     let transformer = new RData(outstream);
+    let attr_typeinfo = json_stream.annotations[attribute];
     json_stream.annotations[attribute] = instream;
-    transformer.dataFrame(instream,['peptide.id','score','rt','scan','ppm','mass','charge'],['string','real','real','string','real','real','int'],{}).then( () => transformer.finish() );
+    transformer.dataFrame(instream,attr_typeinfo.keys,attr_typeinfo.types,{}).then( () => transformer.finish() );
+    if (! typeinfo.attributes ) {
+      typeinfo.attributes = { values : {}, names : [], types: [] };
+    }
     typeinfo.attributes.values[attribute] = outstream;
     typeinfo.attributes.names.push(attribute);
     typeinfo.attributes.types.push({'type' : 'dataframe'});
