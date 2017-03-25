@@ -1,40 +1,51 @@
 'use strict';
 /*jshint esversion: 6, node:true */
 
+const uuid = require('uuid');
+
 const transformer = function(chunk) {
   let key = chunk.key;
   chunk.value.forEach( val => {
     let result = {};
     result.uniprot = key;
+    let peptide_uuid = uuid.v4();
+    result['peptide.id'] = peptide_uuid;
     result['peptide'] = val.sequence || null;
     result['peptide.start'] = val.peptide_start
     result['peptide.end'] = val.peptide_start + val.sequence.length - 1;
     result['source'] = val.source || null;
     result['quantification'] = (val.quant || {}).quant || null;
+    if (result['quantification']) {
+      result['quantification'] = result['quantification'].toString();
+    }
     result['quantification.channels'] = (val.quant || {}).channels || null;
     result['site.ambiguity'] = val.made_ambiguous || null;
     result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
     result['composition'] = (val.composition || [])[0] || null;
     result['activation'] = (val.activation || []).join(',');
 
-    val.sites.forEach( (site) => {
+    (val.sites || []).forEach( (site) => {
       let site_result = Object.assign({},result);
       site_result.site = site[0];
       site_result['site.composition'] = site[1];
       this.push(site_result);
     });
-    val.sites_ambiguous.forEach( (site) => {
+    (val.ambiguous_sites || []).forEach( (site) => {
       let site_result = Object.assign({},result);
       site_result['site.ambiguous.start'] = site[0][0];
       site_result['site.ambiguous.end'] = site[0][1];
       site_result['site.composition'] = site[1];
       this.push(site_result);
     });
+    (val.spectra || []).forEach( spec => {
+      this.annotations['spectra'].push(Object.assign({ 'peptide.id' : peptide_uuid }, spec ));
+    });
   });
 };
 
 transformer.types = [ 'string',
                       'string',
+                      'string',
                       'int',
                       'int',
                       'int',
@@ -42,7 +53,7 @@ transformer.types = [ 'string',
                       'int',
                       'string',
                       'string',
-                      'real',
+                      'string',
                       'string',
                       'string',
                       'string',
@@ -50,6 +61,7 @@ transformer.types = [ 'string',
                       'string'
                     ];
 transformer.keys = [  'uniprot',
+                      'peptide.id',
                       'peptide',
                       'peptide.start',
                       'peptide.end',
@@ -64,5 +76,11 @@ transformer.keys = [  'uniprot',
                       'quantification.confidence',
                       'composition',
                       'activation'];
+
+transformer.annotations = {
+  'spectra' : {
+    'type' : 'data.frame'
+  }
+};
 
 module.exports = transformer;

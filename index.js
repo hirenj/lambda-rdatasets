@@ -1,6 +1,8 @@
 'use strict';
 /*jshint esversion: 6, node:true */
 
+const PassThrough = require('stream').PassThrough;
+
 let config = {};
 
 let bucket_name = 'data';
@@ -73,6 +75,21 @@ const write_frame_stream = function(json_stream) {
                              types: ['string']
                             }
           };
+
+  Object.keys(json_stream.annotations).forEach( attribute => {
+    let outstream = new PassThrough();
+    let instream = new PassThrough({objectMode: true});
+    let transformer = new RData(outstream);
+    json_stream.annotations[attribute] = instream;
+    transformer.dataFrame(instream,['peptide.id','score','rt','scan','ppm','mass','charge'],['string','real','real','string','real','real','int'],{}).then( () => transformer.finish() );
+    typeinfo.attributes.values[attribute] = outstream;
+    typeinfo.attributes.names.push(attribute);
+    typeinfo.attributes.types.push({'type' : 'dataframe'});
+    json_stream.on('end', () => {
+      console.log("Ending attribute data frame");
+      instream.end();
+    });
+  });
 
   let output = require('fs').createWriteStream('output.Rdata');
 

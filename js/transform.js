@@ -6,6 +6,8 @@ const util = require('util');
 
 const ConvertJSON = function(func) {
   this.transformer = func;
+  this.annotations = {};
+  this.annotations['spectra'] = true;
   Transform.call(this, {objectMode: true});
 };
 
