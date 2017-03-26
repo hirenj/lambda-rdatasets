@@ -24,6 +24,12 @@ const fs = require('fs');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 
+const choose_transform = function(metadata) {
+  if (metadata.mimetype == 'application/json+msdata') {
+    return msdata;
+  }
+};
+
 const extract_changed_keys = function(event) {
   if ( ! event.Records ) {
     return [];
@@ -66,11 +72,36 @@ const read_data_stream = function(path) {
   return entry_data;
 };
 
-const write_frame_stream = function(json_stream) {
-  let typeinfo =  {   'type': 'dataframe',
+const write_frame_stream = function(json_stream,metadata) {
+  let typeinfo =  {
+            'type': 'dataframe',
             'keys' : json_stream.keys,
-            'types' : json_stream.types
+            'types' : json_stream.types,
+            'attributes' : { values: {
+                                'taxon' : [metadata.sample.species],
+                                'tissue' : [metadata.sample.tissue],
+                                'celltype' : [metadata.sample.cell_type],
+                                'celltype.id' : [metadata.sample.cell_type_id]
+                              },
+                             names: ['taxon','tissue','celltype','celltype.id'],
+                             types: ['int','string','string','string']
+                           }
           };
+
+  ['ko','wt'].forEach(condition => {
+    if (metadata.sample[condition]) {
+      typeinfo.attributes.values[condition+'.genes'] = metadata.sample[condition];
+      typeinfo.attributes.names.push(condition+'.genes');
+      typeinfo.attributes.types.push('string');
+    }
+  });
+
+  Object.keys((metadata.quantitation || {}).channels || {}).forEach(channel => {
+    typeinfo.attributes.values['channel.sample.'+channel] = [ metadata.quanitation.channels[channel] ];
+    typeinfo.attributes.names.push('channel.sample.'+channel);
+    typeinfo.attributes.types.push('string');
+  });
+
 
   Object.keys(json_stream.annotations).forEach( attribute => {
     let outstream = new PassThrough();
@@ -104,8 +135,9 @@ const write_frame_stream = function(json_stream) {
 };
 
 
-const do_transform = function(filename) {
-  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON(msdata))).then( () => {
+const do_transform = function(filename,metadata) {
+  let transformer = choose_transform(metadata);
+  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON(transformer)),metadata).then( () => {
     console.log('All done');
   });
 };

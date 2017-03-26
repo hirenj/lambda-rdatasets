@@ -18,6 +18,13 @@ const transformer = function(chunk) {
     if (result['quantification']) {
       result['quantification'] = result['quantification'].toString();
     }
+    if (val.quant && val.quant.areas) {
+      Object.keys(val.quant.areas).forEach(channel => {
+        [].concat(val.quant.areas[channel]).forEach( area => {
+          this.annotations['quant.areas'].push({ 'peptide.id' : peptide_uuid, 'channel' : channel, 'area' : area });
+        });
+      });
+    }
     result['quantification.channels'] = (val.quant || {}).channels || null;
     result['site.ambiguity'] = val.made_ambiguous || null;
     result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
@@ -93,6 +100,11 @@ transformer.annotations = {
     'type' : 'dataframe',
     'keys' : ['peptide.id','hexnac.call','hexnac.ratio'],
     'types' : ['string','string','real']
+  },
+  'quant.areas' : {
+    'type' : 'dataframe',
+    'keys' : ['peptide.id','channel','area'],
+    'types': ['string','string','real']
   }
 };
 
