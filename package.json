@@ -22,8 +22,9 @@
     "precommit-hook": "^3.0.0"
   },
   "dependencies": {
-    "JSONStream": "^1.3.1",
     "lambda-helpers": "hirenj/lambda-helpers",
+    "node-jsonpath-s3" : "hirenj/node-jsonpath-s3",
+    "node-uberon-mappings" : "hirenj/node-uberon-mappings",
     "node-rdata": "hirenj/node-rdata",
     "uuid": "^3.0.1"
   },

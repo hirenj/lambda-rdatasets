@@ -16,18 +16,27 @@ try {
 if (config.region) {
   require('lambda-helpers').AWS.setRegion(config.region);
 }
-// const AWS = require('lambda-helpers').AWS;
-// const s3 = new AWS.S3();
 const RData = require('node-rdata');
-const JSONStream = require('JSONStream');
-const fs = require('fs');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
+const jsonstreamer = require('node-jsonpath-s3');
+const metaConverter = require('node-uberon-mappings');
 
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
     return msdata;
   }
+};
+
+const update_metadata = function(metadata) {
+  return metaConverter.convert( metadata.sample.tissue ).then( converted => {
+    console.log(converted);
+    if ( ! converted.root ) {
+      return;
+    }
+    metadata.sample.uberon = converted.root;
+    metadata.sample.description = converted.name;
+  });
 };
 
 const extract_changed_keys = function(event) {
@@ -45,31 +54,26 @@ const extract_changed_keys = function(event) {
   return results.filter( obj => obj.bucket == bucket_name ).map( obj => obj.key );
 };
 
-// const retrieve_file_s3 = function retrieve_file_s3(filekey,byte_offset) {
-//   let params = {
-//     'Key' : filekey,
-//     'Bucket' : bucket_name
-//   };
-//   if (byte_offset) {
-//     params.Range = 'bytes='+byte_offset+'-';
-//   }
-//   let request = s3.getObject(params);
-//   let stream = request.createReadStream();
-//   return stream;
-// };
-
-const retrieve_file_local = function retrieve_file_local(filekey) {
-  return fs.createReadStream(filekey);
+const retrieve_file = function retrieve_file(path) {
+  return jsonstreamer.getDataStream(path);
 };
 
-// const retrieve_file = function retrieve_file(filekey,md5_result,byte_offset) {
-//   return retrieve_file_s3(filekey,md5_result,byte_offset);
-// };
+const retrieve_metadata = function retrieve_file(path) {
+  return jsonstreamer.getMetadataStream(path);
+};
 
-const read_data_stream = function(path) {
-  let input_stream = retrieve_file_local(path);
-  let entry_data = input_stream.pipe(JSONStream.parse(['data', {'emitKey': true}]));
-  return entry_data;
+
+const get_file_data = function(path,metadata) {
+  if ( ! metadata ) {
+    let metadata_stream = retrieve_metadata(path);
+    let retrieved = {};
+    metadata_stream.on('data', meta => retrieved.data = meta );
+    return metadata_stream.finished
+    .then( () => update_metadata(retrieved.data))
+    .then( () => get_file_data(path,retrieved.data) );
+  }
+  let entry_data = retrieve_file(path);
+  return Promise.resolve({ stream:entry_data, metadata:metadata });
 };
 
 const write_frame_stream = function(json_stream,metadata) {
@@ -80,11 +84,13 @@ const write_frame_stream = function(json_stream,metadata) {
             'attributes' : { values: {
                                 'taxon' : [metadata.sample.species],
                                 'tissue' : [metadata.sample.tissue],
-                                'celltype' : [metadata.sample.cell_type],
-                                'celltype.id' : [metadata.sample.cell_type_id]
+                                'basic_tissue' : [metadata.sample.description],
+                                'basic_uberon' : [metadata.sample.uberon],
+                                'celltype' : [metadata.sample.cell_type || ''],
+                                'celltype.id' : [metadata.sample.cell_type_id || '']
                               },
-                             names: ['taxon','tissue','celltype','celltype.id'],
-                             types: ['int','string','string','string']
+                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id'],
+                             types: ['int','string','string','string','string','string']
                            }
           };
 
@@ -97,7 +103,7 @@ const write_frame_stream = function(json_stream,metadata) {
   });
 
   Object.keys((metadata.quantitation || {}).channels || {}).forEach(channel => {
-    typeinfo.attributes.values['channel.sample.'+channel] = [ metadata.quanitation.channels[channel] ];
+    typeinfo.attributes.values['channel.sample.'+channel] = [ metadata.quantitation.channels[channel] ];
     typeinfo.attributes.names.push('channel.sample.'+channel);
     typeinfo.attributes.types.push('string');
   });
@@ -117,7 +123,6 @@ const write_frame_stream = function(json_stream,metadata) {
     typeinfo.attributes.names.push(attribute);
     typeinfo.attributes.types.push({'type' : 'dataframe'});
     json_stream.on('end', () => {
-      console.log("Ending attribute data frame");
       instream.end();
     });
   });
@@ -136,10 +141,16 @@ const write_frame_stream = function(json_stream,metadata) {
 
 
 const do_transform = function(filename,metadata) {
-  let transformer = choose_transform(metadata);
-  write_frame_stream(read_data_stream(filename).pipe(new ConvertJSON(transformer)),metadata).then( () => {
+  return get_file_data(filename,metadata).then( streaminfo => {
+    let stream = streaminfo.stream;
+    let metadata = streaminfo.metadata;
+    let transformer = choose_transform(metadata);
+    return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
+  })
+  .then( () => {
     console.log('All done');
-  });
+  })
+  .catch( console.log.bind(console) );
 };
 
 const serialiseDataset = function(event,context) {
