@@ -22,7 +22,7 @@
     "LambdaSerialiseDatasetRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" }],
+        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" },{ "Ref" : "ReadUploaded" }],
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -71,6 +71,26 @@
               ],
               "Resource": [
                 { "Fn::Join" :  [ "", [ "arn:aws:s3:::", { "Ref" : "AWS::StackName" }, "-gator/rdata/*" ] ] }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ReadUploaded": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "Read data uploaded to gator",
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": [
+                { "Fn::Join" :  [ "", [ "arn:aws:s3:::", { "Ref" : "AWS::StackName" }, "-gator/uploads/*" ] ] }
               ]
             }
           ]
