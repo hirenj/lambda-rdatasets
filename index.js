@@ -45,14 +45,17 @@ const update_metadata = function(metadata) {
 
 const extract_changed_keys = function(event) {
   if ( ! event.Records ) {
-    return [];
+    if (event.Key) {
+      return [event.Key];
+    } else {
+      return [];
+    }
   }
   let results = event.Records
   .filter( rec => rec.Sns )
   .map( rec => {
     let sns_message = JSON.parse(rec.Sns.Message);
-    console.log(sns_message);
-    throw new Error('Need to parse message format');
+    return { bucket: sns_message.Bucket, key: sns_message.Key };
   });
   results = [].concat.apply([],results);
   return results.filter( obj => obj.bucket == bucket_name ).map( obj => obj.key );
@@ -145,7 +148,14 @@ const write_frame_stream = function(json_stream,metadata) {
   writer.writeHeader();
 
   // We need to write out the data frame into an environment
-  return writer.environment( {'data' : json_stream },{'data' : typeinfo })
+
+  let title = metadata.title || 'data';
+  title = title.replace(/[^A-Za-z0-9_]/g,'_').replace(/_+/,'_').replace(/_$/,'').replace(/^[0-9_]+/,'');
+  let stream_block = {};
+  let type_block = {};
+  stream_block[title] = json_stream;
+  type_block[title] = typeinfo;
+  return writer.environment( stream_block,type_block )
       .then( () => writer.finish() )
       .then( () => output_path );
 };
@@ -169,7 +179,6 @@ const uploadToS3 = function(target) {
   let s3 = new AWS.S3();
   pass.finished = new Promise( (resolve,reject) => {
     s3.upload(params, function(err, data) {
-      console.log(arguments);
       if (err) {
         reject(err);
       } else {
@@ -190,7 +199,6 @@ const transformDataS3 = function(input_key,target_key) {
 
 const transformDataLocal = function(input_key) {
   return do_transform(input_key).then( filename => {
-    console.log('Filename is',filename);
     let output_pipe = fs.createWriteStream('output.Rdata');
     let writer = fs.createReadStream(filename);
     writer.pipe(output_pipe);
