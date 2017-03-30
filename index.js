@@ -30,7 +30,6 @@ const choose_transform = function(metadata) {
 
 const update_metadata = function(metadata) {
   return metaConverter.convert( metadata.sample.tissue ).then( converted => {
-    console.log(converted);
     if ( ! converted.root ) {
       return;
     }
