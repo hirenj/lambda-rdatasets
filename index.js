@@ -223,6 +223,7 @@ const serialiseDataset = function(event,context) {
     context.fail('NOT-OK');
     return;
   }
+  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to',`rdata/${output_key}`);
   transformDataS3(`s3://${bucket_name}/${key}`,`rdata/${output_key}`)
   .then( () => context.succeed('OK') )
   .catch( err => {

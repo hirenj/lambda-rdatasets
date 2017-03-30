@@ -22,7 +22,7 @@
     "LambdaSerialiseDatasetRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "ManagedPolicyArns" : [],
+        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" }],
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -55,6 +55,27 @@
             "Principal": "sns.amazonaws.com",
             "SourceArn": { "Ref" : "SplitQueueTopic" }
         }
+    },
+    "WriteRDatasets": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "Write R datasets",
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject",
+                "s3:DeleteObject"
+              ],
+              "Resource": [
+                { "Fn::Join" :  [ "", [ "arn:aws:s3:::", { "Ref" : "AWS::StackName" }, "-gator/rdata/*" ] ] }
+              ]
+            }
+          ]
+        }
+      }
     },
     "serialiseDatasetLogWriterPolicy": {
       "Type": "AWS::IAM::Policy",
