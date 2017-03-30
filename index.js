@@ -88,8 +88,8 @@ const write_frame_stream = function(json_stream,metadata) {
             'attributes' : { values: {
                                 'taxon' : [metadata.sample.species],
                                 'tissue' : [metadata.sample.tissue],
-                                'basic_tissue' : [metadata.sample.description],
-                                'basic_uberon' : [metadata.sample.uberon],
+                                'basic_tissue' : [metadata.sample.description || ''],
+                                'basic_uberon' : [metadata.sample.uberon || ''],
                                 'celltype' : [metadata.sample.cell_type || ''],
                                 'celltype.id' : [metadata.sample.cell_type_id || '']
                               },
@@ -167,7 +167,6 @@ const uploadToS3 = function(target) {
 
   var params = {Bucket: bucket_name, Key: target, Body: pass};
   let s3 = new AWS.S3();
-  console.log(params);
   pass.finished = new Promise( (resolve,reject) => {
     s3.upload(params, function(err, data) {
       console.log(arguments);
