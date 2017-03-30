@@ -94,12 +94,12 @@ const write_frame_stream = function(json_stream,metadata) {
                                 'celltype.id' : [metadata.sample.cell_type_id || '']
                               },
                              names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id'],
-                             types: ['int','string','string','string','string','string']
+                             types: ['real','string','string','string','string','string']
                            }
           };
 
   ['ko','wt'].forEach(condition => {
-    if (metadata.sample[condition]) {
+    if (metadata.sample[condition] && metadata.sample[condition].length > 0) {
       typeinfo.attributes.values[condition+'.genes'] = metadata.sample[condition];
       typeinfo.attributes.names.push(condition+'.genes');
       typeinfo.attributes.types.push('string');
