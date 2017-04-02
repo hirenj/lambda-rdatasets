@@ -25,7 +25,8 @@ const zlib = require('zlib');
 const temp = require('temp');
 const AWS = require('lambda-helpers').AWS;
 const fs = require('fs');
-
+const archiver = require('archiver');
+const path = require('path');
 
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
@@ -65,10 +66,16 @@ const retrieve_file = function retrieve_file(path) {
   return jsonstreamer.getDataStream(path);
 };
 
-const retrieve_metadata = function retrieve_file(path) {
+const retrieve_metadata = function retrieve_metadata(path) {
   return jsonstreamer.getMetadataStream(path);
 };
 
+const derive_basename = function(file_path) {
+  if (file_path.indexOf('s3://') === 0) {
+    return file_path.split('/')[1];
+  }
+  return path.basename(file_path).replace(/\.json$/,'').replace(/.msdata$/,'');
+};
 
 const get_file_data = function(path,metadata) {
   if ( ! metadata ) {
@@ -79,6 +86,7 @@ const get_file_data = function(path,metadata) {
     .then( () => update_metadata(retrieved.data))
     .then( () => get_file_data(path,retrieved.data) );
   }
+  metadata.path_basename = derive_basename(path);
   let entry_data = retrieve_file(path);
   return Promise.resolve({ stream:entry_data, metadata:metadata });
 };
@@ -149,15 +157,15 @@ const write_frame_stream = function(json_stream,metadata) {
 
   // We need to write out the data frame into an environment
 
-  let title = metadata.title || 'data';
-  title = title.replace(/[^A-Za-z0-9_]/g,'_').replace(/_+/,'_').replace(/_$/,'').replace(/^[0-9_]+/,'');
+  let title = metadata.title || metadata.path_basename || 'data';
+  title = title.replace(/[^A-Za-z0-9]/g,'.').replace(/\.+/,'.').replace(/\.$/,'').replace(/^[0-9\.]+/,'');
   let stream_block = {};
   let type_block = {};
   stream_block[title] = json_stream;
   type_block[title] = typeinfo;
   return writer.environment( stream_block,type_block )
       .then( () => writer.finish() )
-      .then( () => output_path );
+      .then( () => { return { path: output_path, metadata: metadata, title: title }; });
 };
 
 
@@ -169,6 +177,34 @@ const do_transform = function(filename,metadata) {
     return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
   })
   .catch( console.log.bind(console) );
+};
+
+const generate_description = function(filedata) {
+  let title = filedata.title;
+  let now = new Date().toISOString().split('T')[0];
+  let version = now.replace(/-/g,'.');
+  let date = now;
+  let description = `\
+Package: gator.${title}
+Version: ${version}
+Date: ${date}
+Depends: R (>= 3.1.0)
+Description: ${title}
+Title: ${title}
+LazyData: yes
+NeedsCompilation: yes`;
+  return description;
+};
+
+const create_package = function(filedata) {
+  let gz = zlib.createGzip();
+  let archive = archiver('tar', { store: true });
+  archive.pipe(gz);
+  archive.append(fs.createReadStream(filedata.path), { name: `${filedata.title}/data/data.rda` });
+  archive.append('', { name: `${filedata.title}/NAMESPACE` });
+  archive.append(generate_description(filedata),{ name: `${filedata.title}/DESCRIPTION` });
+  archive.finalize();
+  return gz;
 };
 
 
@@ -190,21 +226,23 @@ const uploadToS3 = function(target) {
 };
 
 const transformDataS3 = function(input_key,target_key) {
-  return do_transform(input_key).then( filename => {
+  return do_transform(input_key).then( filedata => {
     let output_pipe = uploadToS3(target_key);
-    fs.createReadStream(filename).pipe(output_pipe);
+    let package_stream = create_package(filedata);
+    package_stream.pipe(output_pipe);
     return output_pipe.finished;
   });
 };
 
 const transformDataLocal = function(input_key) {
-  return do_transform(input_key).then( filename => {
-    let output_pipe = fs.createWriteStream('output.Rdata');
-    let writer = fs.createReadStream(filename);
-    writer.pipe(output_pipe);
+  return do_transform(input_key).then( filedata => {
+    let package_stream = create_package(filedata);
+    let output_pipe = fs.createWriteStream('output-package.tar.gz');
+    package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
-      writer.on('finish',resolve);
-      writer.on('error',reject);
+      output_pipe.on('finish',resolve);
+      output_pipe.on('error',reject);
+      package_stream.on('error',reject);
     });
   });
 };
