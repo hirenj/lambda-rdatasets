@@ -6,16 +6,19 @@ const PassThrough = require('stream').PassThrough;
 let config = {};
 
 let bucket_name = 'data';
+let data_table = 'data';
 
 try {
   config = require('./resources.conf.json');
   bucket_name = config.buckets.dataBucket;
+  data_table = config.tables.data;
 } catch (e) {
 }
 
 if (config.region) {
   require('lambda-helpers').AWS.setRegion(config.region);
 }
+
 const RData = require('node-rdata');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
@@ -27,6 +30,7 @@ const AWS = require('lambda-helpers').AWS;
 const fs = require('fs');
 const archiver = require('archiver');
 const path = require('path');
+const dynamo = new AWS.DynamoDB.DocumentClient();
 
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
@@ -247,6 +251,22 @@ const transformDataLocal = function(input_key) {
   });
 };
 
+var write_metadata = function write_metadata(set_id,path) {
+  let params = {
+   'TableName' : data_table,
+   'Key' : {'acc' : 'publications', 'dataset' : set_id }
+  };
+  params.UpdateExpression = 'SET #rdata = :path';
+  params.ExpressionAttributeValues = {
+      ':path': path,
+  };
+  params.ExpressionAttributeNames = {
+    '#rdata' : 'rdata_file'
+  };
+  console.log('Setting RData for',set_id,'to',path);
+  return dynamo.update(params).promise();
+};
+
 const serialiseDataset = function(event,context) {
   let changed_keys = extract_changed_keys(event);
   if (changed_keys.length < 1) {
@@ -261,8 +281,11 @@ const serialiseDataset = function(event,context) {
     context.fail('NOT-OK');
     return;
   }
-  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to',`rdata/${output_key}`);
-  transformDataS3(`s3://${bucket_name}/${key}`,`rdata/${output_key}`)
+  let now = new Date().toISOString().split('T')[0];
+  let version = now.replace(/-/g,'.');
+  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to',`rdata/${output_key}_${version}`);
+  transformDataS3(`s3://${bucket_name}/${key}`,`rdata/${output_key}_${version}`)
+  .then( () => write_metadata(key,`${output_key}_${version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
     console.error(err);
