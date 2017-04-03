@@ -30,20 +30,25 @@ const transformer = function(chunk) {
     result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
     result['composition'] = (val.composition || [])[0] || null;
     result['activation'] = (val.activation || []).join(',');
-
+    let any_site = false;
     (val.sites || []).forEach( (site) => {
       let site_result = Object.assign({},result);
       site_result.site = site[0];
       site_result['site.composition'] = site[1];
       this.push(site_result);
+      any_site = true;
     });
     (val.ambiguous_sites || []).forEach( (site) => {
       let site_result = Object.assign({},result);
       site_result['site.ambiguous.start'] = site[0][0];
       site_result['site.ambiguous.end'] = site[0][1];
       site_result['site.composition'] = site[1];
+      any_site = true;
       this.push(site_result);
     });
+    if ( ! any_site ) {
+      this.push(result);
+    }
     (val.spectra || []).forEach( spec => {
       this.annotations['spectra'].push(Object.assign({ 'peptide.id' : peptide_uuid }, spec ));
     });
