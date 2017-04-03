@@ -187,6 +187,7 @@ const generate_description = function(filedata) {
   let title = filedata.title;
   let now = new Date().toISOString().split('T')[0];
   let version = now.replace(/-/g,'.');
+  filedata.version = version;
   let date = now;
   let description = `\
 Package: gator.${title}
@@ -229,32 +230,33 @@ const uploadToS3 = function(target) {
   return pass;
 };
 
-const transformDataS3 = function(input_key,target_key) {
+const transformDataS3 = function(input_key,target_prefix) {
   return do_transform(input_key).then( filedata => {
-    let output_pipe = uploadToS3(target_key);
     let package_stream = create_package(filedata);
+    target_prefix = target_prefix || '';
+    let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}`);
     package_stream.pipe(output_pipe);
-    return output_pipe.finished;
+    return output_pipe.finished.then( () => filedata );
   });
 };
 
 const transformDataLocal = function(input_key) {
   return do_transform(input_key).then( filedata => {
     let package_stream = create_package(filedata);
-    let output_pipe = fs.createWriteStream('output-package.tar.gz');
+    let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}.tar.gz`);
     package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
       output_pipe.on('finish',resolve);
       output_pipe.on('error',reject);
       package_stream.on('error',reject);
-    });
+    }).then( () => filedata );
   });
 };
 
 var write_metadata = function write_metadata(set_id,path) {
   let params = {
    'TableName' : data_table,
-   'Key' : {'acc' : 'publications', 'dataset' : set_id }
+   'Key' : {'acc' : 'metadata', 'dataset' : set_id }
   };
   params.UpdateExpression = 'SET #rdata = :path';
   params.ExpressionAttributeValues = {
@@ -281,11 +283,9 @@ const serialiseDataset = function(event,context) {
     context.fail('NOT-OK');
     return;
   }
-  let now = new Date().toISOString().split('T')[0];
-  let version = now.replace(/-/g,'.');
-  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to',`rdata/${output_key}_${version}`);
-  transformDataS3(`s3://${bucket_name}/${key}`,`rdata/${output_key}_${version}`)
-  .then( () => write_metadata(key,`${output_key}_${version}`))
+  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`);
+  transformDataS3(`s3://${bucket_name}/${key}`,'rdata/')
+  .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
     console.error(err);
