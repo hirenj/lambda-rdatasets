@@ -96,6 +96,10 @@ const get_file_data = function(path,metadata) {
 };
 
 const write_frame_stream = function(json_stream,metadata) {
+
+  let title = metadata.title || metadata.path_basename || 'data';
+  title = title.replace(/[^A-Za-z0-9]/g,'.').replace(/\.+/,'.').replace(/\.$/,'').replace(/^[0-9\.]+/,'');
+
   let typeinfo =  {
             'type': 'dataframe',
             'keys' : json_stream.keys,
@@ -106,10 +110,11 @@ const write_frame_stream = function(json_stream,metadata) {
                                 'basic_tissue' : [metadata.sample.description || ''],
                                 'basic_uberon' : [metadata.sample.uberon || ''],
                                 'celltype' : [metadata.sample.cell_type || ''],
-                                'celltype.id' : [metadata.sample.cell_type_id || '']
+                                'celltype.id' : [metadata.sample.cell_type_id || ''],
+                                'title' : [title]
                               },
-                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id'],
-                             types: ['real','string','string','string','string','string']
+                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title'],
+                             types: ['real','string','string','string','string','string','string']
                            }
           };
 
@@ -161,8 +166,6 @@ const write_frame_stream = function(json_stream,metadata) {
 
   // We need to write out the data frame into an environment
 
-  let title = metadata.title || metadata.path_basename || 'data';
-  title = title.replace(/[^A-Za-z0-9]/g,'.').replace(/\.+/,'.').replace(/\.$/,'').replace(/^[0-9\.]+/,'');
   let stream_block = {};
   let type_block = {};
   stream_block[title] = json_stream;
