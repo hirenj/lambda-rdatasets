@@ -13,6 +13,9 @@ const transformer = function(chunk) {
     result['peptide'] = val.sequence || null;
     result['peptide.start'] = val.peptide_start
     result['peptide.end'] = (val.peptide_start && val.sequence) ? (val.peptide_start + val.sequence.length - 1) : null;
+    if (! result['peptide.end'] && val.peptide_end) {
+      result['peptide.end'] = val.peptide_end;
+    }
     result['source'] = val.source || null;
     result['quantification'] = (val.quant || {}).quant || null;
     if (result['quantification']) {
