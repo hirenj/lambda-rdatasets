@@ -77,6 +77,26 @@
         }
       }
     },
+    "ReadRDatasets": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "Read R datasets",
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": [
+                { "Fn::Join" :  [ "", [ "arn:aws:s3:::", { "Ref" : "AWS::StackName" }, "-gator/rdata/*" ] ] }
+              ]
+            }
+          ]
+        }
+      }
+    },
     "ReadUploaded": {
       "Type": "AWS::IAM::ManagedPolicy",
       "Properties" : {
