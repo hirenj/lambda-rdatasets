@@ -22,6 +22,8 @@ if (config.region) {
 const RData = require('node-rdata');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
+const expression = require('./js/expression');
+const associations = require('./js/associations');
 const jsonstreamer = require('node-jsonpath-s3');
 const metaConverter = require('node-uberon-mappings');
 const zlib = require('zlib');
@@ -36,9 +38,18 @@ const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
     return msdata;
   }
+  if (metadata.mimetype == 'application/json+expression') {
+    return expression;
+  }
+  if (metadata.mimetype == 'application/json+association') {
+    return associations;
+  }
 };
 
 const update_metadata = function(metadata) {
+  if ( ! metadata.sample || ! metadata.sample.tissue ) {
+    return;
+  }
   return metaConverter.convert( metadata.sample.tissue ).then( converted => {
     if ( ! converted.root ) {
       return;
@@ -183,7 +194,7 @@ const do_transform = function(filename,metadata) {
     let transformer = choose_transform(metadata);
     return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
   })
-  .catch( console.log.bind(console) );
+  .catch( err => { console.log(err); console.log(err.stack); });
 };
 
 const generate_description = function(filedata) {
