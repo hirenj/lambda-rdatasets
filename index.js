@@ -122,10 +122,11 @@ const write_frame_stream = function(json_stream,metadata) {
                                 'basic_uberon' : [metadata.sample.uberon || ''],
                                 'celltype' : [metadata.sample.cell_type || ''],
                                 'celltype.id' : [metadata.sample.cell_type_id || ''],
-                                'title' : [title]
+                                'title' : [title],
+                                'type' : [(metadata.mimetype || '').replace('application/json+','')]
                               },
-                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title'],
-                             types: ['real','string','string','string','string','string','string']
+                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title','type'],
+                             types: ['real','string','string','string','string','string','string','string']
                            }
           };
 
