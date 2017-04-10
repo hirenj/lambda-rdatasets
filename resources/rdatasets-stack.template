@@ -37,25 +37,6 @@
         }
       }
     },
-    "SplitQueueTopic" : {
-      "Type" : "AWS::SNS::Topic",
-      "Properties" : {
-        "DisplayName" : "Events on the Split Queue",
-        "Subscription" : [{
-          "Endpoint" : { "Fn::GetAtt": [ "serialiseDataset", "Arn" ]},
-          "Protocol" : "lambda"
-        }]
-      }
-    },
-    "SerialiseDatasetSplitQueueTopicPermission": {
-        "Type" : "AWS::Lambda::Permission",
-        "Properties" : {
-            "Action":"lambda:InvokeFunction",
-            "FunctionName": { "Fn::GetAtt": [ "serialiseDataset", "Arn" ]},
-            "Principal": "sns.amazonaws.com",
-            "SourceArn": { "Ref" : "SplitQueueTopic" }
-        }
-    },
     "WriteRDatasets": {
       "Type": "AWS::IAM::ManagedPolicy",
       "Properties" : {
