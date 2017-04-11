@@ -198,7 +198,13 @@ const do_transform = function(filename,metadata) {
     }
     return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
   })
-  .catch( err => { console.log(err); console.log(err.stack); });
+  .catch( err => {
+    if (err.message === 'No transformer') {
+      throw err;
+    }
+    console.log(err);
+    console.log(err.stack);
+  });
 };
 
 const generate_description = function(filedata) {
