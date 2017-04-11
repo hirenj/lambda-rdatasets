@@ -193,6 +193,9 @@ const do_transform = function(filename,metadata) {
     let stream = streaminfo.stream;
     let metadata = streaminfo.metadata;
     let transformer = choose_transform(metadata);
+    if ( ! transformer ) {
+      throw new Error('No transformer');
+    }
     return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
   })
   .catch( err => { console.log(err); console.log(err.stack); });
@@ -304,6 +307,11 @@ const serialiseDataset = function(event,context) {
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
+    if (err.message == 'No transformer') {
+      console.log('No transformer for mimetype',metadata.mimetype,'skipping');
+      context.succeed('OK');
+      return;
+    }
     console.error(err);
     console.error(err.stack);
     context.fail('NOT-OK');
