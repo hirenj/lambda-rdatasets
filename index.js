@@ -62,7 +62,7 @@ const update_metadata = function(metadata) {
 const extract_changed_keys = function(event) {
   if ( ! event.Records ) {
     if (event.Key) {
-      return [event.Key];
+      return [ event ];
     } else {
       return [];
     }
@@ -245,8 +245,8 @@ const uploadToS3 = function(target) {
   return pass;
 };
 
-const transformDataS3 = function(input_key,target_prefix) {
-  return do_transform(input_key).then( filedata => {
+const transformDataS3 = function(input_key,target_prefix,metadata) {
+  return do_transform(input_key,metadata).then( filedata => {
     let package_stream = create_package(filedata);
     target_prefix = target_prefix || '';
     let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}`);
@@ -291,7 +291,8 @@ const serialiseDataset = function(event,context) {
     return;
   }
   console.log(changed_keys);
-  let key = changed_keys[0];
+  let key = changed_keys.map( entry => (typeof entry === 'object') ? entry.Key: entry )[0];
+  let metadata = changed_keys.map( entry => entry.metadata )[0];
   let output_key = key.split('/')[1];
   if ( ! output_key ) {
     console.log('Missing output key for',key);
@@ -299,7 +300,7 @@ const serialiseDataset = function(event,context) {
     return;
   }
   console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`);
-  transformDataS3(`s3://${bucket_name}/${key}`,'rdata/')
+  transformDataS3(`s3://${bucket_name}/${key}`,'rdata/',metadata)
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
