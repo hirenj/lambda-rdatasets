@@ -16,7 +16,7 @@ const transformer = function(chunk) {
     result.efo = val.trait_uri.split('/').reverse()[0];
     result.trait = val.trait;
 
-    if (val.snp_position == 'upstream') {
+    if (val.snp_position == 'upstream' || val.snp_position == 'downstream') {
       result.gene_distance = Math.abs(val['distance']);
     } else {
       result.gene_distance = 0;
