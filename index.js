@@ -196,7 +196,7 @@ const do_transform = function(filename,metadata) {
     if ( ! transformer ) {
       throw new Error('No transformer');
     }
-    return write_frame_stream( stream.pipe(new ConvertJSON(transformer)), metadata );
+    return write_frame_stream( stream.pipe(new ConvertJSON(transformer,metadata)), metadata );
   })
   .catch( err => {
     if (err.message === 'No transformer') {
