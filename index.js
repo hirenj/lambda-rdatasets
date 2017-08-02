@@ -81,8 +81,8 @@ const retrieve_file = function retrieve_file(path) {
   return jsonstreamer.getDataStream(path);
 };
 
-const retrieve_metadata = function retrieve_metadata(path) {
-  return jsonstreamer.getMetadataStream(path);
+const retrieve_metadata = function retrieve_metadata(path,offset) {
+  return jsonstreamer.getMetadataStream(path,offset);
 };
 
 const derive_basename = function(file_path) {
@@ -94,7 +94,7 @@ const derive_basename = function(file_path) {
 
 const get_file_data = function(path,metadata) {
   if ( ! metadata ) {
-    let metadata_stream = retrieve_metadata(path);
+    let metadata_stream = retrieve_metadata(path,-1024*1024);
     let retrieved = {};
     metadata_stream.on('data', meta => retrieved.data = meta );
     return metadata_stream.finished
