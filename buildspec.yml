@@ -6,7 +6,7 @@ phases:
       - npm install
   build:
     commands:
-      - /tmp/runbuild/run_buildstep.sh 'build'
+      - node run_single.js $BUILD_KEY
   post_build:
     commands:
       - /tmp/runbuild/run_buildstep.sh 'post_build'
