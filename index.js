@@ -99,12 +99,13 @@ const derive_basename = function(file_path) {
 
 const get_file_data = function(path,metadata) {
   if ( ! metadata ) {
-    let metadata_stream = retrieve_metadata(path,-1024*1024);
-    let retrieved = {};
-    metadata_stream.on('data', meta => retrieved.data = meta );
-    return metadata_stream.finished
-    .then( () => update_metadata(retrieved.data))
-    .then( () => get_file_data(path,retrieved.data) );
+    return retrieve_metadata(path,-1024*1024).then( metadata_stream => {
+      let retrieved = {};
+      metadata_stream.on('data', meta => retrieved.data = meta );
+      return metadata_stream.finished
+      .then( () => update_metadata(retrieved.data))
+      .then( () => get_file_data(path,retrieved.data) );
+    });
   }
   metadata.path_basename = derive_basename(path);
   let entry_data = retrieve_file(path);
