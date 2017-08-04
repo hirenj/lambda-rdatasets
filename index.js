@@ -5,8 +5,8 @@ const PassThrough = require('stream').PassThrough;
 
 let config = {};
 
-let bucket_name = 'data';
-let data_table = 'data';
+let bucket_name = process.env.BUILD_BUCKET || 'data';
+let data_table = process.env.BUILD_TABLE || 'data';
 
 try {
   config = require('./resources.conf.json');
