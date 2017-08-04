@@ -3,14 +3,7 @@ version: 0.1
 phases:
   install:
     commands:
-      - echo 'Installing Build runner'
-      - git clone https://github.com/hirenj/aws-runbuild.git /tmp/runbuild
-      - chmod +x /tmp/runbuild/run_buildstep.sh
-      - npm install -g hirenj/node-checkversion
-      - /tmp/runbuild/run_buildstep.sh 'install'
-  pre_build:
-    commands:
-      - /tmp/runbuild/run_buildstep.sh 'pre_build'
+      - npm install
   build:
     commands:
       - /tmp/runbuild/run_buildstep.sh 'build'
