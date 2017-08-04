@@ -23,6 +23,7 @@ const RData = require('node-rdata');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
+const expression_slim = require('./js/expression_slim');
 const associations = require('./js/associations');
 const jsonstreamer = require('node-jsonpath-s3');
 const metaConverter = require('node-uberon-mappings');
@@ -40,6 +41,9 @@ const choose_transform = function(metadata) {
   }
   if (metadata.mimetype == 'application/json+expression') {
     return expression;
+  }
+  if (metadata.mimetype == 'application/json+slim_expression') {
+    return expression_slim;
   }
   if (metadata.mimetype == 'application/json+association') {
     return associations;
