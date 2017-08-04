@@ -189,7 +189,7 @@
               }
             ]
         },
-        "Roles" : [ { "Ref" : "LambdaSerialiseDatasetRole" } ]
+        "Roles" : [ { "Ref" : "LambdaSerialiseDatasetRole" },{ "Ref" : "LambdaBuildSerialiseDatasetRole" } ]
       }
     }
   },
