@@ -26,11 +26,11 @@
         "Environment" : {
           "EnvironmentVariables" : [{
             "Name" : "BUILD_BUCKET",
-            "Value" : { "Ref" : "dataBucket" }
+            "Value" : { "Fn::Join": ["",[{"Ref": "AWS::StackName"},"-gator"]]}
           },
           {
             "Name" : "BUILD_TABLE",
-            "Value" : { "Ref" : "data" }
+            "Value" : { "Fn::Join": ["",[{"Ref": "AWS::StackName"},"-gator"]]}
           },
           {
             "Name" : "BUILD_KEY",
@@ -42,7 +42,7 @@
           "Type" : "LINUX_CONTAINER"
         },
         "Name" : "SerialiseDatasetBuild",
-        "ServiceRole" : {"Ref" : "LambdaSerialiseDatasetRole" },
+        "ServiceRole" : {"Ref" : "LambdaBuildSerialiseDatasetRole" },
         "Source" : {
           "Location" : "https://github.com/hirenj/lambda-rdatasets.git",
           "Type" : "GITHUB"
@@ -53,6 +53,24 @@
       "Type": "AWS::IAM::Role",
       "Properties": {
         "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" },{ "Ref" : "ReadUploaded" },{"Ref": "WriteDatasets"},{"Ref": "RunSerialiseDatasetBuild"}],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    },
+    "LambdaBuildSerialiseDatasetRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" },{ "Ref" : "ReadUploaded" },{"Ref": "WriteDatasets"}],
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
