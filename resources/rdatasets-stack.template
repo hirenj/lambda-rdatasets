@@ -19,10 +19,40 @@
         "Timeout" : 300
       }
     },
+    "serialiseDatasetBuildProject" : {
+      "Type" : "AWS::CodeBuild::Project",
+      "Properties" : {
+        "Artifacts" : { "Type": "NO_ARTIFACTS" },
+        "Environment" : {
+          "EnvironmentVariables" : [{
+            "Name" : "BUILD_BUCKET",
+            "Value" : { "Ref" : "dataBucket" }
+          },
+          {
+            "Name" : "BUILD_TABLE",
+            "Value" : { "Ref" : "data" }
+          },
+          {
+            "Name" : "BUILD_KEY",
+            "Value" : ""
+          }
+          ],
+          "ComputeType" : "BUILD_GENERAL1_SMALL",
+          "Image" : "aws/codebuild/nodejs:4.3.2",
+          "Type" : "LINUX_CONTAINER"
+        },
+        "Name" : "SerialiseDatasetBuild",
+        "ServiceRole" : {"Ref" : "LambdaSerialiseDatasetRole" },
+        "Source" : {
+          "Location" : "https://github.com/hirenj/lambda-rdatasets.git",
+          "Type" : "GITHUB"
+        }
+      }
+    },
     "LambdaSerialiseDatasetRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" },{ "Ref" : "ReadUploaded" },{"Ref": "WriteDatasets"}],
+        "ManagedPolicyArns" : [{ "Ref" : "WriteRDatasets" },{ "Ref" : "ReadUploaded" },{"Ref": "WriteDatasets"},{"Ref": "RunSerialiseDatasetBuild"}],
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -30,6 +60,13 @@
               "Effect": "Allow",
               "Principal": {
                 "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
               },
               "Action": "sts:AssumeRole"
             }
@@ -95,6 +132,24 @@
               ]
             }
           ]
+        }
+      }
+    },
+    "RunSerialiseDatasetBuild": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "Allow function to trigger builds",
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                "codebuild:StartBuild"
+              ],
+              "Resource": [
+                { "Fn::GetAtt" : [ "serialiseDatasetBuildProject", "Arn" ]}
+              ]
+            }]
         }
       }
     },
