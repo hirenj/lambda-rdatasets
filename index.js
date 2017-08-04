@@ -34,6 +34,7 @@ const fs = require('fs');
 const archiver = require('archiver');
 const path = require('path');
 const dynamo = new AWS.DynamoDB.DocumentClient();
+const codebuild = new AWS.CodeBuild();
 
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
@@ -280,6 +281,20 @@ const transformDataLocal = function(input_key) {
     }).then( () => filedata );
   });
 };
+
+const start_build = function(key) {
+  return codebuild.startBuild({
+    projectName: 'SerialiseDatasetBuild',
+    timeoutInMinutesOverride: 60,
+    environmentVariablesOverride: [
+    {
+      name: 'BUILD_KEY',
+      value: key
+    }]
+  }).promise();
+};
+
+console.log(typeof start_build);
 
 var write_metadata = function write_metadata(set_id,path) {
   let params = {
