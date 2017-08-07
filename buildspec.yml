@@ -3,6 +3,7 @@ version: 0.1
 phases:
   install:
     commands:
+      - if [ -z $BUILD_KEY ]; then exit 1; fi
       - npm install
   build:
     commands:
