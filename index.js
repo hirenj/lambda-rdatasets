@@ -109,7 +109,7 @@ const get_file_data = function(path,metadata) {
   }
   metadata.path_basename = derive_basename(path);
   let entry_data = retrieve_file(path);
-  return Promise.resolve({ stream:entry_data, metadata:metadata });
+  return entry_data.then( stream => { return { stream: stream, metadata: metadata }; });
 };
 
 const write_frame_stream = function(json_stream,metadata) {
