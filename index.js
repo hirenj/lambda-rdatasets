@@ -36,6 +36,8 @@ const path = require('path');
 const dynamo = new AWS.DynamoDB.DocumentClient();
 const codebuild = new AWS.CodeBuild();
 
+const MAX_FILE_SIZE = 50*1024*1024;
+
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
     return msdata;
@@ -80,6 +82,34 @@ const extract_changed_keys = function(event) {
   });
   results = [].concat.apply([],results);
   return results.filter( obj => obj.bucket == bucket_name ).map( obj => obj.key );
+};
+
+const start_build = function(key) {
+  return codebuild.startBuild({
+    projectName: 'SerialiseDatasetBuild',
+    timeoutInMinutesOverride: 60,
+    environmentVariablesOverride: [
+    {
+      name: 'BUILD_KEY',
+      value: key
+    }]
+  }).promise();
+};
+
+const long_build_if_needed = function long_build_if_needed(bucket,key) {
+  let params = {
+    Bucket: bucket,
+    Key: key
+  };
+  let s3 = new AWS.S3();
+  return s3.headObject(params).promise().then( head => {
+    if (head.ContentLength >= MAX_FILE_SIZE) {
+      return start_build(key).then( () => {
+        throw new Error('Using long build');
+      });
+    }
+    return true;
+  });
 };
 
 const retrieve_file = function retrieve_file(path) {
@@ -283,20 +313,6 @@ const transformDataLocal = function(input_key) {
   });
 };
 
-const start_build = function(key) {
-  return codebuild.startBuild({
-    projectName: 'SerialiseDatasetBuild',
-    timeoutInMinutesOverride: 60,
-    environmentVariablesOverride: [
-    {
-      name: 'BUILD_KEY',
-      value: key
-    }]
-  }).promise();
-};
-
-console.log(typeof start_build);
-
 var write_metadata = function write_metadata(set_id,path) {
   let params = {
    'TableName' : data_table,
@@ -329,7 +345,8 @@ const serialiseDataset = function(event,context) {
     return;
   }
   console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`);
-  transformDataS3(`s3://${bucket_name}/${key}`,'rdata/',metadata)
+  long_build_if_needed(bucket_name,key)
+  .then( () => transformDataS3(`s3://${bucket_name}/${key}`,'rdata/',metadata))
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
@@ -337,6 +354,10 @@ const serialiseDataset = function(event,context) {
       console.log('No transformer for mimetype',metadata.mimetype,'skipping');
       context.succeed('OK');
       return;
+    }
+    if (err.message == 'Using long build') {
+      console.log('Using long build');
+      context.succeed('OK');
     }
     console.error(err);
     console.error(err.stack);
