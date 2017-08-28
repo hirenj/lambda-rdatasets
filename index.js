@@ -20,6 +20,7 @@ if (config.region) {
 }
 
 const RData = require('node-rdata');
+const TDE = require('node-tde');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
@@ -142,7 +143,7 @@ const get_file_data = function(path,metadata) {
   return entry_data.then( stream => { return { stream: stream, metadata: metadata }; });
 };
 
-const write_frame_stream = function(json_stream,metadata) {
+const write_frame_stream = function(serializer,json_stream,metadata) {
 
   let title = metadata.title || metadata.path_basename || 'data';
   title = title.replace(/[^A-Za-z0-9]/g,'.').replace(/\.+/,'.').replace(/\.$/,'').replace(/^[0-9\.]+/,'');
@@ -184,7 +185,7 @@ const write_frame_stream = function(json_stream,metadata) {
   Object.keys(json_stream.annotations).forEach( attribute => {
     let outstream = new PassThrough();
     let instream = new PassThrough({objectMode: true});
-    let transformer = new RData(outstream);
+    let transformer = new serializer(outstream);
     let attr_typeinfo = json_stream.annotations[attribute];
     json_stream.annotations[attribute] = instream;
     transformer.dataFrame(instream,attr_typeinfo.keys,attr_typeinfo.types,{}).then( () => transformer.finish() );
@@ -199,15 +200,10 @@ const write_frame_stream = function(json_stream,metadata) {
     });
   });
 
-  let gz = zlib.createGzip();
-
-  let writer = new RData(gz);
-
-
   let outstream = temp.createWriteStream();
   let output_path = outstream.path;
 
-  gz.pipe(outstream);
+  let writer = new serializer(outstream, {gzip: true});
 
   // Write the header for the R data file format
   writer.writeHeader();
@@ -224,7 +220,7 @@ const write_frame_stream = function(json_stream,metadata) {
 };
 
 
-const do_transform = function(filename,metadata) {
+const do_transform = function(serializer,filename,metadata) {
   return get_file_data(filename,metadata).then( streaminfo => {
     let stream = streaminfo.stream;
     let metadata = streaminfo.metadata;
@@ -232,7 +228,7 @@ const do_transform = function(filename,metadata) {
     if ( ! transformer ) {
       throw new Error('No transformer');
     }
-    return write_frame_stream( stream.pipe(new ConvertJSON(transformer,metadata)), metadata );
+    return write_frame_stream( serializer, stream.pipe(new ConvertJSON(transformer,metadata)), metadata );
   })
   .catch( err => {
     if (err.message === 'No transformer') {
@@ -291,7 +287,8 @@ const uploadToS3 = function(target) {
 };
 
 const transformDataS3 = function(input_key,target_prefix,metadata) {
-  return do_transform(input_key,metadata).then( filedata => {
+  let transformer = true? RData : TDE;
+  return do_transform(transformer,input_key,metadata).then( filedata => {
     let package_stream = create_package(filedata);
     target_prefix = target_prefix || '';
     let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}`);
@@ -301,7 +298,8 @@ const transformDataS3 = function(input_key,target_prefix,metadata) {
 };
 
 const transformDataLocal = function(input_key) {
-  return do_transform(input_key).then( filedata => {
+  let transformer = true? RData : TDE;
+  return do_transform(transformer,input_key).then( filedata => {
     let package_stream = create_package(filedata);
     let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}.tar.gz`);
     package_stream.pipe(output_pipe);
@@ -325,7 +323,7 @@ var write_metadata = function write_metadata(set_id,path) {
   params.ExpressionAttributeNames = {
     '#rdata' : 'rdata_file'
   };
-  console.log('Setting RData for',set_id,'to',path);
+  console.log('Setting data file path for',set_id,'to',path);
   return dynamo.update(params).promise();
 };
 
