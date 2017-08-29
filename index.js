@@ -226,7 +226,12 @@ const perform_transform = function(serializer,filename,metadata) {
     if ( ! transformer ) {
       throw new Error('No transformer');
     }
-    return write_frame_stream( serializer, stream.pipe(new ConvertJSON(transformer,metadata)), metadata );
+    let conversion_pipe = stream.pipe(new ConvertJSON(transformer,metadata));
+    if (serializer.Formatter) {
+      let formatter_class = serializer.Formatter;
+      conversion_pipe = conversion_pipe.pipe(new formatter_class(metadata));
+    }
+    return write_frame_stream( serializer, conversion_pipe, metadata );
   })
   .catch( err => {
     if (err.message === 'No transformer') {
