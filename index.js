@@ -83,7 +83,7 @@ const extract_changed_keys = function(event) {
   return results.filter( obj => obj.bucket == bucket_name ).map( obj => obj.key );
 };
 
-const start_build = function(key) {
+const start_build = function(key,serialiser) {
   return codebuild.startBuild({
     projectName: 'SerialiseDatasetBuild',
     timeoutInMinutesOverride: 60,
@@ -91,11 +91,15 @@ const start_build = function(key) {
     {
       name: 'BUILD_KEY',
       value: key
+    },
+    {
+      name: 'BUILD_SERIALISER',
+      value: serialiser
     }]
   }).promise();
 };
 
-const long_build_if_needed = function long_build_if_needed(bucket,key) {
+const long_build_if_needed = function long_build_if_needed(bucket,key,serialiser) {
   let params = {
     Bucket: bucket,
     Key: key
@@ -103,7 +107,7 @@ const long_build_if_needed = function long_build_if_needed(bucket,key) {
   let s3 = new AWS.S3();
   return s3.headObject(params).promise().then( head => {
     if (head.ContentLength >= MAX_FILE_SIZE) {
-      return start_build(key).then( () => {
+      return start_build(key,serialiser).then( () => {
         throw new Error('Using long build');
       });
     }
@@ -270,6 +274,13 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
   if ( ! transformer ) {
     transformer = RData;
   }
+  if (transformer === 'RData') {
+    transformer = RData;
+  }
+  if (transformer === 'TDE') {
+    transformer = TDE;
+  }
+
   return perform_transform(transformer,input_key,metadata).then( filedata => {
     version_filedata(filedata);
     let package_stream = transformer.package(filedata, { data_filename: 'data' });
@@ -287,6 +298,12 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
 const transformDataLocal = function(transformer,input_key) {
   if ( ! transformer ) {
     transformer = RData;
+  }
+  if (transformer === 'RData') {
+    transformer = RData;
+  }
+  if (transformer === 'TDE') {
+    transformer = TDE;
   }
   return perform_transform(transformer,input_key).then( filedata => {
     version_filedata(filedata);
@@ -336,9 +353,17 @@ const serialiseDataset = function(event,context) {
     context.fail('NOT-OK');
     return;
   }
-  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`);
-  long_build_if_needed(bucket_name,key)
-  .then( () => transformDataS3(RData,`s3://${bucket_name}/${key}`,'rdata/',metadata))
+  let serialiser = RData;
+  if (event.serialiser === 'RData') {
+    serialiser = RData;
+  }
+  if (event.serialiser === 'TDE') {
+    serialiser = TDE;
+  }
+
+  console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`,event.serialiser);
+  long_build_if_needed(bucket_name,key,event.serialiser)
+  .then( () => transformDataS3(serialiser,`s3://${bucket_name}/${key}`,'rdata/',metadata))
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {

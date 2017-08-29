@@ -7,4 +7,4 @@ phases:
       - npm install
   build:
     commands:
-      - node run_single.js $BUILD_KEY
+      - node run_single.js $BUILD_KEY $BUILD_SERIALISER
