@@ -214,7 +214,7 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
   type_block[title] = typeinfo;
   return writer.environment( stream_block,type_block )
       .then( () => writer.finish() )
-      .then( () => { return { path: output_path, metadata: metadata, title: title }; });
+      .then( () => { return { path: output_path, metadata: metadata, title: title, suffix: serializer.suffix }; });
 };
 
 
@@ -266,24 +266,36 @@ const version_filedata = function(filedata) {
   return filedata;
 };
 
-const transformDataS3 = function(input_key,target_prefix,metadata) {
-  let transformer = true? RData : TDE;
+const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
+  if ( ! transformer ) {
+    transformer = RData;
+  }
   return perform_transform(transformer,input_key,metadata).then( filedata => {
     version_filedata(filedata);
     let package_stream = transformer.package(filedata, { data_filename: 'data' });
     target_prefix = target_prefix || '';
-    let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}`);
+    let suffix = '';
+    if (filedata.suffix) {
+      suffix = `.${filedata.suffix}`;
+    }
+    let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}${suffix}`);
     package_stream.pipe(output_pipe);
     return output_pipe.finished.then( () => filedata );
   });
 };
 
-const transformDataLocal = function(input_key) {
-  let transformer = false? RData : TDE;
+const transformDataLocal = function(transformer,input_key) {
+  if ( ! transformer ) {
+    transformer = RData;
+  }
   return perform_transform(transformer,input_key).then( filedata => {
     version_filedata(filedata);
     let package_stream = transformer.package(filedata, { data_filename: 'data' });
-    let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}.tar.gz`);
+    let suffix = '';
+    if (filedata.suffix) {
+      suffix = `.${filedata.suffix}`;
+    }
+    let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}${suffix}.tar.gz`);
     package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
       output_pipe.on('finish',resolve);
@@ -326,7 +338,7 @@ const serialiseDataset = function(event,context) {
   }
   console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`);
   long_build_if_needed(bucket_name,key)
-  .then( () => transformDataS3(`s3://${bucket_name}/${key}`,'rdata/',metadata))
+  .then( () => transformDataS3(RData,`s3://${bucket_name}/${key}`,'rdata/',metadata))
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
@@ -346,5 +358,6 @@ const serialiseDataset = function(event,context) {
 };
 
 exports.serialiseDataset = serialiseDataset;
+exports.transformers = [ RData, TDE ];
 exports.do_transform = transformDataLocal;
 exports.do_transform_s3 = transformDataS3;
