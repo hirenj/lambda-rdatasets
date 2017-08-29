@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8' ?>
+
+<!-- build 10300.17.0728.2252                               -->
+<datasource formatted-name='blahblahblah' inline='true' source-platform='mac' version='10.3' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <connection class='federated'>
+    <named-connections>
+      <named-connection name="E.MTAB.2770.RNA.seq.of.934.human.cancer.cell.lines.from.the.Cancer.Cell.Line.Encyclopedia-connection">
+        <connection class="dataengine" dbname="E.MTAB.2770.RNA.seq.of.934.human.cancer.cell.lines.from.the.Cancer.Cell.Line.Encyclopedia_2017.08.29/E.MTAB.2770.RNA.seq.of.934.human.cancer.cell.lines.from.the.Cancer.Cell.Line.Encyclopedia.tde" password=""/></named-connection>
+      <named-connection name="E.MTAB.2836.RNA.seq.of.coding.RNA.from.tissue.samples.of.122.human.individuals.representing.32.different.tissues-connection">
+        <connection class="dataengine" dbname="E.MTAB.2836.RNA.seq.of.coding.RNA.from.tissue.samples.of.122.human.individuals.representing.32.different.tissues_2017.08.29/E.MTAB.2836.RNA.seq.of.coding.RNA.from.tissue.samples.of.122.human.individuals.representing.32.different.tissues.tde" password=""/></named-connection>
+    </named-connections>
+    <relation all="true" name="flatpack" type="union">
+      <relation connection="E.MTAB.2770.RNA.seq.of.934.human.cancer.cell.lines.from.the.Cancer.Cell.Line.Encyclopedia-connection" name="E.MTAB.2770.RNA.seq.of.934.human.cancer.cell.lines.from.the.Cancer.Cell.Line.Encyclopedia" table="[Extract].[Extract]" type="table"/>
+      <relation connection="E.MTAB.2836.RNA.seq.of.coding.RNA.from.tissue.samples.of.122.human.individuals.representing.32.different.tissues-connection" name="E.MTAB.2836.RNA.seq.of.coding.RNA.from.tissue.samples.of.122.human.individuals.representing.32.different.tissues" table="[Extract].[Extract]" type="table"/>
+    </relation>
+  </connection>
+</datasource>
