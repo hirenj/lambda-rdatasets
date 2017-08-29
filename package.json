@@ -22,7 +22,6 @@
     "precommit-hook": "^3.0.0"
   },
   "dependencies": {
-    "archiver": "^1.3.0",
     "lambda-helpers": "hirenj/lambda-helpers",
     "node-jsonpath-s3": "hirenj/node-jsonpath-s3",
     "node-rdata": "hirenj/node-rdata",

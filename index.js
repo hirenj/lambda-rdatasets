@@ -28,11 +28,9 @@ const expression_slim = require('./js/expression_slim');
 const associations = require('./js/associations');
 const jsonstreamer = require('node-jsonpath-s3');
 const metaConverter = require('node-uberon-mappings');
-const zlib = require('zlib');
 const temp = require('temp');
 const AWS = require('lambda-helpers').AWS;
 const fs = require('fs');
-const archiver = require('archiver');
 const path = require('path');
 const dynamo = new AWS.DynamoDB.DocumentClient();
 const codebuild = new AWS.CodeBuild();
@@ -220,7 +218,7 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
 };
 
 
-const do_transform = function(serializer,filename,metadata) {
+const perform_transform = function(serializer,filename,metadata) {
   return get_file_data(filename,metadata).then( streaminfo => {
     let stream = streaminfo.stream;
     let metadata = streaminfo.metadata;
@@ -239,36 +237,6 @@ const do_transform = function(serializer,filename,metadata) {
   });
 };
 
-const generate_description = function(filedata) {
-  let title = filedata.title;
-  let now = new Date().toISOString().split('T')[0];
-  let version = now.replace(/-/g,'.');
-  filedata.version = version;
-  let date = now;
-  let description = `\
-Package: gator.${title}
-Version: ${version}
-Date: ${date}
-Depends: R (>= 3.1.0)
-Description: ${title}
-Title: ${title}
-LazyData: yes
-NeedsCompilation: yes`;
-  return description;
-};
-
-const create_package = function(filedata) {
-  let gz = zlib.createGzip();
-  let archive = archiver('tar', { store: true });
-  archive.pipe(gz);
-  archive.append(fs.createReadStream(filedata.path), { name: `${filedata.title}/data/data.rda` });
-  archive.append('', { name: `${filedata.title}/NAMESPACE` });
-  archive.append(generate_description(filedata),{ name: `${filedata.title}/DESCRIPTION` });
-  archive.finalize();
-  return gz;
-};
-
-
 const uploadToS3 = function(target) {
   var pass = new PassThrough();
 
@@ -286,10 +254,18 @@ const uploadToS3 = function(target) {
   return pass;
 };
 
+const version_filedata = function(filedata) {
+  let now = new Date().toISOString().split('T')[0];
+  let version = now.replace(/-/g,'.');
+  filedata.version = version;
+  return filedata;
+};
+
 const transformDataS3 = function(input_key,target_prefix,metadata) {
   let transformer = true? RData : TDE;
-  return do_transform(transformer,input_key,metadata).then( filedata => {
-    let package_stream = create_package(filedata);
+  return perform_transform(transformer,input_key,metadata).then( filedata => {
+    version_filedata(filedata);
+    let package_stream = transformer.package(filedata, { data_filename: 'data' });
     target_prefix = target_prefix || '';
     let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}`);
     package_stream.pipe(output_pipe);
@@ -298,9 +274,10 @@ const transformDataS3 = function(input_key,target_prefix,metadata) {
 };
 
 const transformDataLocal = function(input_key) {
-  let transformer = true? RData : TDE;
-  return do_transform(transformer,input_key).then( filedata => {
-    let package_stream = create_package(filedata);
+  let transformer = false? RData : TDE;
+  return perform_transform(transformer,input_key).then( filedata => {
+    version_filedata(filedata);
+    let package_stream = transformer.package(filedata, { data_filename: 'data' });
     let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}.tar.gz`);
     package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
