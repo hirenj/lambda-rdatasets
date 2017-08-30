@@ -21,6 +21,10 @@
     "jshint": "^2.9.2",
     "precommit-hook": "^3.0.0"
   },
+  "config": {
+    "target_arch": "x64",
+    "target_platform": "linux"
+  },
   "dependencies": {
     "lambda-helpers": "hirenj/lambda-helpers",
     "node-jsonpath-s3": "hirenj/node-jsonpath-s3",
