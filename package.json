@@ -12,7 +12,7 @@
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-aws": "^0.6.1",
-    "grunt-aws-lambda": "^0.11.0",
+    "grunt-aws-lambda": "hirenj/grunt-aws-lambda",
     "grunt-env": "^0.4.4",
     "load-grunt-tasks": "^3.4.0",
     "aws-sdk": "^2.7.21",

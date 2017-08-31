@@ -41,8 +41,11 @@ module.exports = function(grunt) {
         options: {
           file_name: 'index.js',
           handler: 'index.'+funcname,
-          region: config.region,
+          region: config.region
         },
+        deploy_mode: 's3',
+        S3bucketName: grunt.option('cf-bucket'),
+        S3Prefix: 'lambda-packages',
         function: config.functions[funcname] || funcname,
         arn: null,
     };
