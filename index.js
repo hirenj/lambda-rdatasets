@@ -155,8 +155,8 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
             'keys' : json_stream.keys,
             'types' : json_stream.types,
             'attributes' : { values: {
-                                'taxon' : [metadata.sample.species],
-                                'tissue' : [metadata.sample.tissue],
+                                'taxon' : [metadata.sample.species || ''],
+                                'tissue' : [metadata.sample.tissue || ''],
                                 'basic_tissue' : [metadata.sample.description || ''],
                                 'basic_uberon' : [metadata.sample.uberon || ''],
                                 'celltype' : [metadata.sample.cell_type || ''],
