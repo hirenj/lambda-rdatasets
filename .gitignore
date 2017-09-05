@@ -2,3 +2,4 @@ dist
 node_modules
 *.Rdata
 test*.json
+*.gz
