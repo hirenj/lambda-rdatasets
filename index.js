@@ -323,6 +323,7 @@ const transformDataLocal = function(transformer,input_key) {
 };
 
 var write_metadata = function write_metadata(set_id,path) {
+  console.log('Updating Rdata path for ',set_id,path);
   let params = {
    'TableName' : data_table,
    'Key' : {'acc' : 'metadata', 'dataset' : set_id }
@@ -386,3 +387,4 @@ exports.serialiseDataset = serialiseDataset;
 exports.transformers = [ RData, TDE ];
 exports.do_transform = transformDataLocal;
 exports.do_transform_s3 = transformDataS3;
+exports.update_metadata = write_metadata;
