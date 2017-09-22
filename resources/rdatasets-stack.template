@@ -30,7 +30,7 @@
           },
           {
             "Name" : "BUILD_TABLE",
-            "Value" : { "Fn::Join": ["",[{"Ref": "AWS::StackName"},"-gator"]]}
+            "Value" : { "Ref": "data" }
           },
           {
             "Name" : "BUILD_KEY",
