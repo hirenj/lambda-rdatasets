@@ -283,7 +283,7 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
 
   return perform_transform(transformer,input_key,metadata).then( filedata => {
     version_filedata(filedata);
-    let package_stream = transformer.package(filedata, { data_filename: 'data' });
+    let package_stream = transformer.package(filedata, { prefix: 'gator', data_filename: 'data' });
     target_prefix = target_prefix || '';
     let suffix = '';
     if (filedata.suffix) {
@@ -307,7 +307,7 @@ const transformDataLocal = function(transformer,input_key) {
   }
   return perform_transform(transformer,input_key).then( filedata => {
     version_filedata(filedata);
-    let package_stream = transformer.package(filedata, { data_filename: 'data' });
+    let package_stream = transformer.package(filedata, { prefix: 'gator', data_filename: 'data' });
     let suffix = '';
     if (filedata.suffix) {
       suffix = `.${filedata.suffix}`;
