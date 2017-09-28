@@ -4,7 +4,10 @@
 const Transform = require('stream').Transform;
 const util = require('util');
 
-const ConvertJSON = function(func,metadata) {
+const seedrandom = require('seedrandom');
+
+
+const ConvertJSON = function(func,metadata,sample) {
   this.transformer = func;
   this.metadata = metadata;
   this.annotations = {};
@@ -13,6 +16,10 @@ const ConvertJSON = function(func,metadata) {
   });
   this.types = func.types;
   this.keys = func.keys;
+  if (sample && sample.rate) {
+    this.sample = sample.rate;
+    this.rng = seedrandom(sample.seed || new Date().getTime());
+  }
   Transform.call(this, {objectMode: true});
 };
 
@@ -20,7 +27,9 @@ util.inherits(ConvertJSON, Transform);
 
 ConvertJSON.prototype._transform = function(chunk,enc,cb) {
   let self = this;
-  this.transformer(chunk,this.metadata);
+  if (! this.sample || (this.rng() <= this.sample) ){
+    this.transformer(chunk,this.metadata);
+  }
   cb();
 };
 

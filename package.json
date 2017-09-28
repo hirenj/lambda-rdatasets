@@ -29,8 +29,9 @@
     "lambda-helpers": "hirenj/lambda-helpers",
     "node-jsonpath-s3": "hirenj/node-jsonpath-s3",
     "node-rdata": "hirenj/node-rdata",
-    "node-tde" : "hirenj/node-tde",
+    "node-tde": "hirenj/node-tde",
     "node-uberon-mappings": "hirenj/node-uberon-mappings",
+    "seedrandom": "^2.4.3",
     "temp": "^0.8.3",
     "uuid": "^3.0.1"
   },

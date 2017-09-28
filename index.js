@@ -222,7 +222,7 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
 };
 
 
-const perform_transform = function(serializer,filename,metadata) {
+const perform_transform = function(serializer,filename,metadata,sample) {
   return get_file_data(filename,metadata).then( streaminfo => {
     let stream = streaminfo.stream;
     let metadata = streaminfo.metadata;
@@ -230,7 +230,7 @@ const perform_transform = function(serializer,filename,metadata) {
     if ( ! transformer ) {
       throw new Error('No transformer');
     }
-    let conversion_pipe = stream.pipe(new ConvertJSON(transformer,metadata));
+    let conversion_pipe = stream.pipe(new ConvertJSON(transformer,metadata,sample));
     if (serializer.Formatter) {
       let formatter_class = serializer.Formatter;
       conversion_pipe = conversion_pipe.pipe(new formatter_class(metadata));
@@ -271,6 +271,8 @@ const version_filedata = function(filedata) {
 };
 
 const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
+  let sample;
+
   if ( ! transformer ) {
     transformer = RData;
   }
@@ -281,7 +283,17 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
     transformer = TDE;
   }
 
-  return perform_transform(transformer,input_key,metadata).then( filedata => {
+  if (transformer === 'RData_partial') {
+    transformer = RData;
+    sample = { rate: 0.05, seed: 'SEED' };
+  }
+
+  if (transformer === 'TDE_partial') {
+    transformer = TDE;
+    sample = { rate: 0.05, seed: 'SEED' };
+  }
+
+  return perform_transform(transformer,input_key,metadata,sample).then( filedata => {
     version_filedata(filedata);
     let package_stream = transformer.package(filedata, { prefix: 'gator', data_filename: 'data' });
     target_prefix = target_prefix || '';
@@ -289,13 +301,19 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
     if (filedata.suffix) {
       suffix = `.${filedata.suffix}`;
     }
-    let output_pipe = uploadToS3(`${target_prefix}${filedata.title}_${filedata.version}${suffix}`);
+    let filename = filedata.title;
+    if (sample) {
+      filename = `partial_${filename}`;
+    }
+    let output_pipe = uploadToS3(`${target_prefix}${filename}_${filedata.version}${suffix}`);
     package_stream.pipe(output_pipe);
     return output_pipe.finished.then( () => filedata );
   });
 };
 
 const transformDataLocal = function(transformer,input_key) {
+  let sample;
+
   if ( ! transformer ) {
     transformer = RData;
   }
@@ -305,14 +323,29 @@ const transformDataLocal = function(transformer,input_key) {
   if (transformer === 'TDE') {
     transformer = TDE;
   }
-  return perform_transform(transformer,input_key).then( filedata => {
+
+  if (transformer === 'RData_partial') {
+    transformer = RData;
+    sample = { rate: 0.05, seed: 'SEED' };
+  }
+
+  if (transformer === 'TDE_partial') {
+    transformer = TDE;
+    sample = { rate: 0.05, seed: 'SEED' };
+  }
+
+  return perform_transform(transformer,input_key,null,sample).then( filedata => {
     version_filedata(filedata);
     let package_stream = transformer.package(filedata, { prefix: 'gator', data_filename: 'data' });
     let suffix = '';
     if (filedata.suffix) {
       suffix = `.${filedata.suffix}`;
     }
-    let output_pipe = fs.createWriteStream(`${filedata.title}_${filedata.version}${suffix}.tar.gz`);
+    let filename = filedata.title;
+    if (sample) {
+      filename = `partial_${filename}`;
+    }
+    let output_pipe = fs.createWriteStream(`${filename}_${filedata.version}${suffix}.tar.gz`);
     package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
       output_pipe.on('finish',resolve);
