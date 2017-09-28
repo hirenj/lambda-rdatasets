@@ -387,17 +387,10 @@ const serialiseDataset = function(event,context) {
     context.fail('NOT-OK');
     return;
   }
-  let serialiser = RData;
-  if (event.serialiser === 'RData') {
-    serialiser = RData;
-  }
-  if (event.serialiser === 'TDE') {
-    serialiser = TDE;
-  }
 
   console.log('Transforming from',`s3://${bucket_name}/${key}`,'to (approximately)',`rdata/${output_key}_1970.01.01`,event.serialiser);
   long_build_if_needed(bucket_name,key,event.serialiser)
-  .then( () => transformDataS3(serialiser,`s3://${bucket_name}/${key}`,'rdata/',metadata))
+  .then( () => transformDataS3(event.serialiser,`s3://${bucket_name}/${key}`,'rdata/',metadata))
   .then( (filedata) => write_metadata(output_key,`${filedata.title}_${filedata.version}`))
   .then( () => context.succeed('OK') )
   .catch( err => {
