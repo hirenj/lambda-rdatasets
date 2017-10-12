@@ -24,6 +24,7 @@ const TDE = require('node-tde');
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
+const prediction = require('./js/prediction');
 const expression_slim = require('./js/expression_slim');
 const associations = require('./js/associations');
 const jsonstreamer = require('node-jsonpath-s3');
@@ -43,6 +44,9 @@ const choose_transform = function(metadata) {
   }
   if (metadata.mimetype == 'application/json+expression') {
     return expression;
+  }
+  if (metadata.mimetype == 'application/json+msdata-prediction') {
+    return prediction;
   }
   if (metadata.mimetype == 'application/json+slim_expression') {
     return expression_slim;
@@ -345,7 +349,7 @@ const transformDataLocal = function(transformer,input_key) {
     if (sample) {
       filename = `partial_${filename}`;
     }
-    let output_pipe = fs.createWriteStream(`${filename}_${filedata.version}${suffix}.tar.gz`);
+    let output_pipe = fs.createWriteStream(`${filename}_${filedata.version}${suffix}`);
     package_stream.pipe(output_pipe);
     return new Promise( (resolve,reject) => {
       output_pipe.on('finish',resolve);
