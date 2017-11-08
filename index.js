@@ -7,11 +7,13 @@ let config = {};
 
 let bucket_name = process.env.BUILD_BUCKET || 'data';
 let data_table = process.env.BUILD_TABLE || 'data';
+let stack;
 
 try {
   config = require('./resources.conf.json');
   bucket_name = config.buckets.dataBucket;
   data_table = config.tables.data;
+  stack = config.stack;
 } catch (e) {
 }
 
@@ -89,7 +91,7 @@ const extract_changed_keys = function(event) {
 
 const start_build = function(key,serialiser) {
   return codebuild.startBuild({
-    projectName: 'SerialiseDatasetBuild',
+    projectName: stack+'-SerialiseDatasetBuild',
     timeoutInMinutesOverride: 60,
     environmentVariablesOverride: [
     {
