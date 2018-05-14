@@ -29,6 +29,7 @@ const expression = require('./js/expression');
 const prediction = require('./js/prediction');
 const expression_slim = require('./js/expression_slim');
 const associations = require('./js/associations');
+const glycodomains = require('./js/glycodomains');
 const jsonstreamer = require('node-jsonpath-s3');
 const metaConverter = require('node-uberon-mappings');
 const temp = require('temp');
@@ -55,6 +56,9 @@ const choose_transform = function(metadata) {
   }
   if (metadata.mimetype == 'application/json+association') {
     return associations;
+  }
+  if (metadata.mimetype == 'application/json+glycodomain') {
+    return glycodomains;
   }
 };
 
@@ -155,6 +159,13 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
 
   let title = metadata.title || metadata.path_basename || 'data';
   title = title.replace(/[^A-Za-z0-9]/g,'.').replace(/\.+/,'.').replace(/\.$/,'').replace(/^[0-9\.]+/,'');
+
+  if ( ! metadata.sample ) {
+    metadata.sample = {};
+  }
+  if (metadata.taxonomy && ! metadata.sample.species) {
+    metadata.sample.species = parseInt(metadata.taxonomy);
+  }
 
   let typeinfo =  {
             'type': 'dataframe',
