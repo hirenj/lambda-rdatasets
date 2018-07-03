@@ -179,10 +179,11 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
                                 'celltype' : [metadata.sample.cell_type || ''],
                                 'celltype.id' : [metadata.sample.cell_type_id || ''],
                                 'title' : [title],
-                                'type' : [(metadata.mimetype || '').replace('application/json+','')]
+                                'type' : [(metadata.mimetype || '').replace('application/json+','')],
+                                'doi' : [ metadata.doi || '' ]
                               },
-                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title','type'],
-                             types: ['real','string','string','string','string','string','string','string']
+                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title','type','doi'],
+                             types: ['real','string','string','string','string','string','string','string','string']
                            }
           };
 
