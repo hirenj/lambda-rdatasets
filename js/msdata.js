@@ -30,7 +30,7 @@ const transformer = function(chunk) {
     }
     result['quantification.channels'] = (val.quant || {}).channels || null;
     result['site.ambiguity'] = val.made_ambiguous || null;
-    result['quantifiation.confidence'] = (val.quant || {}).singlet_confidence || null;
+    result['quantification.confidence'] = (val.quant || {}).singlet_confidence || null;
     result['composition'] = (val.composition || [])[0] || null;
     result['activation'] = (val.activation || []).join(',');
     let any_site = false;
