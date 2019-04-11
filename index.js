@@ -22,7 +22,16 @@ if (config.region) {
 }
 
 const RData = require('node-rdata');
-const TDE = require('node-tde');
+
+let tde_try;
+
+try {
+  tde_try = require('node-tde');
+} catch (ex) {
+  tde_try = Symbol('UNSUPPORTED');
+}
+
+const TDE = tde_try;
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
@@ -116,7 +125,7 @@ const long_build_if_needed = function long_build_if_needed(bucket,key,serialiser
   };
   let s3 = new AWS.S3();
   return s3.headObject(params).promise().then( head => {
-    if (head.ContentLength >= MAX_FILE_SIZE) {
+    if (head.ContentLength >= MAX_FILE_SIZE || serialiser === 'TDE' || serialiser === 'TDE_partial') {
       return start_build(key,serialiser).then( () => {
         throw new Error('Using long build');
       });
