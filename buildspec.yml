@@ -6,7 +6,7 @@ phases:
       - if [ -z $BUILD_KEY ]; then exit 1; fi
       - add-apt-repository ppa:ubuntu-toolchain-r/test
       - apt-get update
-      - apt-get upgrade libstdc++6
+      - apt-get -y upgrade libstdc++6
       - npm install
   build:
     commands:
