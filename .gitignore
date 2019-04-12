@@ -4,3 +4,4 @@ node_modules
 *.tde
 test*.json
 *.gz
+resources.conf.json
