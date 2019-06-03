@@ -60,6 +60,7 @@ Resources:
         - !Ref 'ReadUploaded'
         - !Ref 'WriteDatasets'
         - !Ref 'RunSerialiseDatasetBuild'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -72,6 +73,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref 'ReadRDatasets'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -86,6 +88,7 @@ Resources:
         - !Ref 'WriteRDatasets'
         - !Ref 'ReadUploaded'
         - !Ref 'WriteDatasets'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -146,20 +149,4 @@ Resources:
               - codebuild:StartBuild
             Resource:
               - !GetAtt 'serialiseDatasetBuildProject.Arn'
-  serialiseDatasetLogWriterPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: serialiseDatasetLogWriterPolicy
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-            Resource: arn:aws:logs:*:*:*
-      Roles:
-        - !Ref 'LambdaSerialiseDatasetRole'
-        - !Ref 'LambdaBuildSerialiseDatasetRole'
 Outputs: {}
