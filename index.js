@@ -33,7 +33,6 @@ try {
 }
 
 const TDE = tde_try;
-console.log(TDE);
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
