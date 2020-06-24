@@ -23,16 +23,6 @@ if (config.region) {
 
 const RData = require('node-rdata');
 
-let tde_try;
-
-try {
-  tde_try = require('node-tde');
-} catch (ex) {
-  console.log(ex);
-  tde_try = Symbol('UNSUPPORTED');
-}
-
-const TDE = tde_try;
 const ConvertJSON = require('./js/transform').ConvertJSON;
 const msdata = require('./js/msdata');
 const expression = require('./js/expression');
@@ -126,7 +116,7 @@ const long_build_if_needed = function long_build_if_needed(bucket,key,serialiser
   };
   let s3 = new AWS.S3();
   return s3.headObject(params).promise().then( head => {
-    if (head.ContentLength >= MAX_FILE_SIZE || serialiser === 'TDE' || serialiser === 'TDE_partial') {
+    if (head.ContentLength >= MAX_FILE_SIZE) {
       return start_build(key,serialiser).then( () => {
         throw new Error('Using long build');
       });
@@ -307,17 +297,9 @@ const transformDataS3 = function(transformer,input_key,target_prefix,metadata) {
   if (transformer === 'RData') {
     transformer = RData;
   }
-  if (transformer === 'TDE') {
-    transformer = TDE;
-  }
 
   if (transformer === 'RData_partial') {
     transformer = RData;
-    sample = { rate: 0.05, seed: 'SEED' };
-  }
-
-  if (transformer === 'TDE_partial') {
-    transformer = TDE;
     sample = { rate: 0.05, seed: 'SEED' };
   }
 
@@ -348,17 +330,9 @@ const transformDataLocal = function(transformer,input_key) {
   if (transformer === 'RData') {
     transformer = RData;
   }
-  if (transformer === 'TDE') {
-    transformer = TDE;
-  }
 
   if (transformer === 'RData_partial') {
     transformer = RData;
-    sample = { rate: 0.05, seed: 'SEED' };
-  }
-
-  if (transformer === 'TDE_partial') {
-    transformer = TDE;
     sample = { rate: 0.05, seed: 'SEED' };
   }
 
@@ -438,7 +412,7 @@ const serialiseDataset = function(event,context) {
 };
 
 exports.serialiseDataset = serialiseDataset;
-exports.transformers = [ RData, TDE ];
+exports.transformers = [ RData ];
 exports.do_transform = transformDataLocal;
 exports.do_transform_s3 = transformDataS3;
 exports.update_metadata = write_metadata;
