@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "./node_modules/jshint/bin/jshint index.js",
+    "lint": "node ./node_modules/jshint/bin/jshint index.js lambdas/*",
     "validate": "npm ls"
   },
   "author": "",
@@ -19,18 +19,18 @@
     "grunt-force-task": "^2.0.0",
     "grunt-git-describe": "^2.4.2",
     "jshint": "^2.9.2",
-    "precommit-hook": "^3.0.0"
+    "precommit-hook": "^3.0.0",
+    "gator-webpack": "hirenj/gator-webpack"
   },
   "config": {
     "target_arch": "x64",
     "target_platform": "linux"
   },
-
   "dependencies": {
     "lambda-helpers": "hirenj/lambda-helpers",
     "node-jsonpath-s3": "hirenj/node-jsonpath-s3",
     "node-rdata": "hirenj/node-rdata",
-    "node-uberon-mappings": "hirenj/node-uberon-mappings",
+    "node-uberon-mappings": "github:hirenj/node-uberon-mappings",
     "seedrandom": "^2.4.3",
     "temp": "^0.8.3",
     "uuid": "^3.0.1"
