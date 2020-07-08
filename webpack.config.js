@@ -4,7 +4,7 @@ const ModuleInstaller = base_config.ModuleInstaller;
 
 config.plugins = [ new ModuleInstaller(['hirenj/node-uberon-mappings']) ].concat(config.plugins);
 
-config.externals.concat(
+config.externals = config.externals.concat(
   [{ 'node-uberon-mappings' : 'node-uberon-mappings' }
   ]
 )
