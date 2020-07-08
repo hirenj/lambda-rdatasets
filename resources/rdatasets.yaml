@@ -8,7 +8,7 @@ Resources:
       Description: serialiseDataset
       Handler: index.serialiseDataset
       Role: !GetAtt 'LambdaSerialiseDatasetRole.Arn'
-      Runtime: nodejs8.10
+      Runtime: !Ref nodejsversion
       MemorySize: 1024
       Timeout: 300
   signRdataUrl:
@@ -28,7 +28,7 @@ Resources:
         Variables:
           BUCKET: !Sub '${AWS::StackName}-gator'
       Role: !GetAtt 'LambdaReadRDatasetsRole.Arn'
-      Runtime: nodejs8.10
+      Runtime: !Ref nodejsversion
       MemorySize: 128
       Timeout: 300
   serialiseDatasetBuildProject:
