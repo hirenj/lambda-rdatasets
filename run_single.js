@@ -1,6 +1,6 @@
 'use strict';
 
-let runner = require('.');
+let runner = require('./js/common');
 let bucket_name = process.env['BUILD_BUCKET'];
 let key = process.argv[2];
 let output_key = key.split('/')[1];
