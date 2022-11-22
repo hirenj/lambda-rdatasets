@@ -17,10 +17,14 @@ const transformer = function(chunk) {
       result['peptide.end'] = val.peptide_end;
     }
     result['source'] = val.source || null;
+
+    // This code path should be deprecated
+
     result['quantification'] = (val.quant || {}).quant || null;
     if (result['quantification']) {
       result['quantification'] = result['quantification'].toString();
     }
+
     if (val.quant && val.quant.areas) {
       Object.keys(val.quant.areas).forEach(channel => {
         [].concat(val.quant.areas[channel]).forEach( area => {
@@ -28,7 +32,27 @@ const transformer = function(chunk) {
         });
       });
     }
-    result['quantification.channels'] = (val.quant || {}).channels || null;
+    result['quantification.channels'] = (val.quant || {}).channels || null;      
+
+    // end deprecation
+
+    let quant_array = (Array.isArray(val.quant) ? val.quant : [val.quant]).filter( v => v );
+    for (let {quant,channels,areas,raw} of quant_array) {
+
+      if (quant) {
+        this.annotations['quants'].push({ 'peptide.id' : peptide_uuid, channels, 'ratio' : +quant });
+      }
+
+      let raw_values = areas || raw || {}; 
+      for (let [channel,raw_quants] of Object.entries(raw_values)) {
+        if (! Array.isArray(raw_quants)) {
+          raw_quants = [ raw_quants ];
+        }
+        for (let raw_quant of raw_quants) {
+          this.annotations['quants.raw'].push({ 'peptide.id' : peptide_uuid, 'channel' : channel, 'raw' : raw_quant });          
+        }
+      }
+    }
     result['site.ambiguity'] = val.made_ambiguous || null;
     result['quantification.confidence'] = (val.quant || {}).singlet_confidence || null;
     result['composition'] = (val.composition || [])[0] || null;
@@ -112,6 +136,16 @@ transformer.annotations = {
   'quant.areas' : {
     'type' : 'dataframe',
     'keys' : ['peptide.id','channel','area'],
+    'types': ['string','string','real']
+  },
+  'quants.raw' : {
+    'type' : 'dataframe',
+    'keys' : ['peptide.id','channel','raw'],
+    'types': ['string','string','real']
+  },
+  'quants' : {
+    'type' : 'dataframe',
+    'keys' : ['peptide.id','channels','ratio'],
     'types': ['string','string','real']
   }
 };

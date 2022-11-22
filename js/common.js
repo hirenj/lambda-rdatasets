@@ -195,11 +195,20 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
     }
   });
 
-  Object.keys((metadata.quantitation || {}).channels || {}).forEach(channel => {
-    typeinfo.attributes.values['channel.sample.'+channel] = [ metadata.quantitation.channels[channel] ];
+  for (let [channel,channel_sample] of Object.entries((metadata.quantitation || {}).channels || {})) {
+    typeinfo.attributes.values['channel.sample.'+channel] = [ channel_sample ];
     typeinfo.attributes.names.push('channel.sample.'+channel);
     typeinfo.attributes.types.push('string');
-  });
+  }
+
+  if (metadata.channel_samples) {
+    json_stream.annotations['channel.samples'] =
+    {
+      'type': 'dataframe',
+      'keys' : ['channel','sample','type','entrez','symbol'],
+      'types' : ['string','string','string','int','string']
+    };
+  }
 
 
   Object.keys(json_stream.annotations).forEach( attribute => {
@@ -219,6 +228,49 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
       instream.end();
     });
   });
+
+
+  if (metadata.channel_samples && metadata.quantitation) {
+
+    let sample_infos = Object.entries(metadata.quantitation.channels || {})
+    .map( ([channel,sample]) =>{ return { channel, sample }; } );
+
+    sample_infos.forEach( (channel_info) => channel_info.sample_info = metadata.channel_samples[channel_info.sample] );
+
+    for (let {channel,sample,sample_info} of sample_infos ) {
+      let ko = sample_info['perturbation-ko'];
+      let ki = sample_info['perturbation-ki'];
+      let wt = sample_info['perturbation-wt'];
+      let other = sample_info['perturbation-other'];
+
+      for (let {entrez,symbol} of ko ) {
+        json_stream.annotations['channel.samples'].push( {
+          channel,sample, type: "ko", entrez, symbol
+        });
+      }
+
+      for (let {entrez,symbol} of ki ) {
+        json_stream.annotations['channel.samples'].push( {
+          channel,sample, type: "ki", entrez, symbol
+        });
+      }
+
+      for (let {entrez,symbol} of wt ) {
+        json_stream.annotations['channel.samples'].push( {
+          channel,sample, type: "wt", entrez, symbol
+        });
+      }
+
+      for (let other_desc of other ) {
+        json_stream.annotations['channel.samples'].push( {
+          channel,sample, type: other_desc
+        });
+      }
+
+    }
+      
+  }
+
 
   let outstream = temp.createWriteStream();
   let output_path = outstream.path;

@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "lambda-helpers": "hirenj/lambda-helpers",
-    "node-jsonpath-s3": "hirenj/node-jsonpath-s3",
+    "node-jsonpath-s3": "github:hirenj/node-jsonpath-s3",
     "node-rdata": "hirenj/node-rdata",
     "node-uberon-mappings": "github:hirenj/node-uberon-mappings",
     "seedrandom": "^2.4.3",
