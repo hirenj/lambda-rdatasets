@@ -43,7 +43,10 @@ const MAX_FILE_SIZE = 50*1024*1024;
 
 const choose_transform = function(metadata) {
   if (metadata.mimetype == 'application/json+msdata') {
-    return msdata;
+    if (metadata['msdata-version']) {
+      return msdata.version(metadata['msdata-version']);
+    }
+    return msdata.latest();
   }
   if (metadata.mimetype == 'application/json+expression') {
     return expression;
@@ -180,10 +183,11 @@ const write_frame_stream = function(serializer,json_stream,metadata) {
                                 'celltype.id' : [metadata.sample.cell_type_id || ''],
                                 'title' : [title],
                                 'type' : [(metadata.mimetype || '').replace('application/json+','')],
+                                'msdata.version' : [metadata['msdata-version']],
                                 'doi' : [ metadata.doi || '' ]
                               },
-                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title','type','doi'],
-                             types: ['real','string','string','string','string','string','string','string','string']
+                             names: ['taxon','tissue','basic_tissue','basic_uberon','celltype','celltype.id','title','type','msdata.version','doi'],
+                             types: ['real','string','string','string','string','string','string','string','string','string']
                            }
           };
 
